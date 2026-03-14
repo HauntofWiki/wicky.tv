@@ -91,6 +91,9 @@ function Header({ navigate, user }) {
         wicky.tv
       </span>
       <div style={styles.nav}>
+        <span style={styles.navLink} onClick={() => navigate('/home')}>
+          morioh
+        </span>
         {user && (
           <span style={styles.navLink} onClick={() => navigate(`/@${user.username}`)}>
             @{user.username}

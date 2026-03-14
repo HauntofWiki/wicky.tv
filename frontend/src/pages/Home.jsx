@@ -35,6 +35,7 @@ export default function Home() {
       </div>
       <div style={styles.body}>
         <p style={styles.welcome}>hey, {user?.display_name || user?.username}.</p>
+        <p style={styles.feedLabel}>morioh</p>
         <p style={styles.muted}>posts coming in phase 3.</p>
       </div>
     </div>
@@ -77,5 +78,12 @@ const styles = {
   },
   muted: {
     color: 'var(--text-muted)',
+  },
+  feedLabel: {
+    color: 'var(--accent)',
+    fontSize: '13px',
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
+    marginTop: '4px',
   },
 }

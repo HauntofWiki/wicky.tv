@@ -67,6 +67,9 @@ export default function Settings() {
           wicky.tv
         </span>
         <div style={styles.nav}>
+          <span style={styles.navLink} onClick={() => navigate('/home')}>
+            morioh
+          </span>
           <span style={styles.navLink} onClick={() => navigate(`/@${user?.username}`)}>
             @{user?.username}
           </span>
