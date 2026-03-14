@@ -4,6 +4,8 @@ import { getMe } from './api'
 import AdminInvites from './pages/AdminInvites'
 import Home from './pages/Home'
 import Login from './pages/Login'
+import Profile from './pages/Profile'
+import Settings from './pages/Settings'
 import Signup from './pages/Signup'
 
 const AuthContext = createContext(null)
@@ -43,7 +45,9 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/admin/invites" element={<AdminRoute><AdminInvites /></AdminRoute>} />
+          <Route path="/@:username" element={<Profile />} />
           <Route path="/" element={<Navigate to="/home" replace />} />
         </Routes>
       </BrowserRouter>

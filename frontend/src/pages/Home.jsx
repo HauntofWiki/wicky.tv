@@ -22,6 +22,12 @@ export default function Home() {
               invites
             </span>
           )}
+          <span style={styles.navLink} onClick={() => navigate('/settings')}>
+            settings
+          </span>
+          <span style={styles.navLink} onClick={() => navigate(`/@${user?.username}`)}>
+            @{user?.username}
+          </span>
           <span style={styles.navLink} onClick={handleLogout}>
             log out
           </span>

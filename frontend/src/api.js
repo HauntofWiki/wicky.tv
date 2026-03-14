@@ -33,3 +33,27 @@ export const createInvite = () =>
   request('/admin/invites', { method: 'POST' })
 
 export const listInvites = () => request('/admin/invites')
+
+export const getProfile = (username) => request(`/users/${username}`)
+
+export const updateProfile = (display_name, bio) =>
+  request('/users/me', {
+    method: 'PUT',
+    body: JSON.stringify({ display_name, bio }),
+  })
+
+export const uploadAvatar = (file) => {
+  const form = new FormData()
+  form.append('file', file)
+  return fetch(`${BASE}/users/me/avatar`, {
+    method: 'POST',
+    credentials: 'include',
+    body: form,
+  }).then(async (res) => {
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Upload failed' }))
+      throw new Error(err.detail || 'Upload failed')
+    }
+    return res.json()
+  })
+}
