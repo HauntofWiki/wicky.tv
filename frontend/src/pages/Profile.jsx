@@ -6,7 +6,8 @@ import { getProfile } from '../api'
 import { useAuth } from '../App'
 
 export default function Profile() {
-  const { username } = useParams()
+  const { username: rawUsername } = useParams()
+  const username = rawUsername?.replace(/^@/, '')
   const { user } = useAuth()
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)

@@ -47,7 +47,7 @@ export default function App() {
           <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/admin/invites" element={<AdminRoute><AdminInvites /></AdminRoute>} />
-          <Route path="/@:username" element={<Profile />} />
+          <Route path="/:username" element={<Profile />} />
           <Route path="/" element={<Navigate to="/home" replace />} />
         </Routes>
       </BrowserRouter>
