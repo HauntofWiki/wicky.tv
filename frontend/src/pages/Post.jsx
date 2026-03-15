@@ -8,6 +8,132 @@ import {
 } from '../api'
 import { useAuth } from '../App'
 
+// ── Compose modal ────────────────────────────────────────────────────────────
+
+function ComposeModal({ postId, quotedComment, onClose, onPosted }) {
+  const [body, setBody] = useState('')
+  const [file, setFile] = useState(null)
+  const [preview, setPreview] = useState(null) // { url, type }
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const textareaRef = useRef(null)
+  const fileRef = useRef(null)
+
+  useEffect(() => {
+    textareaRef.current?.focus()
+  }, [])
+
+  function handleFile(e) {
+    const f = e.target.files[0]
+    if (!f) { setFile(null); setPreview(null); return }
+    setFile(f)
+    const isVideo = f.type.startsWith('video/')
+    if (isVideo) {
+      setPreview({ url: URL.createObjectURL(f), type: 'video' })
+    } else {
+      setPreview({ url: URL.createObjectURL(f), type: 'image' })
+    }
+  }
+
+  function clearFile() {
+    if (preview) URL.revokeObjectURL(preview.url)
+    setFile(null)
+    setPreview(null)
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!body.trim() && !file) return
+    setSubmitting(true)
+    setError('')
+    try {
+      const c = await createComment(postId, {
+        body: body.trim() || undefined,
+        quotedCommentId: quotedComment?.id,
+        file,
+      })
+      if (preview) URL.revokeObjectURL(preview.url)
+      onPosted(c)
+    } catch (err) {
+      setError(err.message)
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div style={styles.overlay} onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div style={styles.modal}>
+        <div style={styles.modalHeader}>
+          <span style={styles.modalTitle}>reply</span>
+          <span style={styles.closeBtn} onClick={onClose}>✕</span>
+        </div>
+
+        {quotedComment && (
+          <div style={styles.quotedBlock}>
+            <span style={styles.quotedAuthor}>@{quotedComment.user.username}</span>
+            {quotedComment.body && (
+              <span style={styles.quotedBody}>
+                {quotedComment.body.length > 120
+                  ? quotedComment.body.slice(0, 120) + '…'
+                  : quotedComment.body}
+              </span>
+            )}
+            {!quotedComment.body && quotedComment.media_path && (
+              <span style={styles.muted}>[media]</span>
+            )}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} style={styles.composeForm}>
+          <textarea
+            ref={textareaRef}
+            style={styles.textarea}
+            placeholder="say something…"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={4}
+          />
+
+          {preview && (
+            <div style={styles.previewWrap}>
+              {preview.type === 'video' ? (
+                <video src={preview.url} style={styles.previewMedia} controls />
+              ) : (
+                <img src={preview.url} style={styles.previewMedia} alt="attachment preview" />
+              )}
+              <span style={styles.clearFile} onClick={clearFile}>remove</span>
+            </div>
+          )}
+
+          <div style={styles.composeActions}>
+            <label style={styles.attachLabel}>
+              attach
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,video/mp4,video/quicktime"
+                style={{ display: 'none' }}
+                onChange={handleFile}
+              />
+            </label>
+            {error && <span style={styles.errorText}>{error}</span>}
+            <button
+              type="submit"
+              style={{ ...styles.btn, marginLeft: 'auto' }}
+              disabled={submitting || (!body.trim() && !file)}
+            >
+              {submitting ? 'posting…' : 'post'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ── Main page ────────────────────────────────────────────────────────────────
+
 export default function Post() {
   const { id } = useParams()
   const { user } = useAuth()
@@ -17,15 +143,10 @@ export default function Post() {
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const [comments, setComments] = useState([])
-  const [replyBody, setReplyBody] = useState('')
-  const [replyFile, setReplyFile] = useState(null)
-  const [quotedId, setQuotedId] = useState(null)
-  const [submitting, setSubmitting] = useState(false)
-  const [replyError, setReplyError] = useState('')
+  const [composing, setComposing] = useState(false)
+  const [quotedComment, setQuotedComment] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [editBody, setEditBody] = useState('')
-  const replyRef = useRef(null)
-  const fileRef = useRef(null)
 
   useEffect(() => {
     getPost(id)
@@ -45,32 +166,20 @@ export default function Post() {
     }
   }
 
-  function quoteComment(comment) {
-    setQuotedId(comment.id)
-    replyRef.current?.focus()
+  function openQuote(comment) {
+    setQuotedComment(comment)
+    setComposing(true)
   }
 
-  async function handleSubmitReply(e) {
-    e.preventDefault()
-    if (!replyBody.trim() && !replyFile) return
-    setSubmitting(true)
-    setReplyError('')
-    try {
-      const c = await createComment(id, {
-        body: replyBody.trim() || undefined,
-        quotedCommentId: quotedId,
-        file: replyFile,
-      })
-      setComments((prev) => [...prev, c])
-      setReplyBody('')
-      setReplyFile(null)
-      setQuotedId(null)
-      if (fileRef.current) fileRef.current.value = ''
-    } catch (err) {
-      setReplyError(err.message)
-    } finally {
-      setSubmitting(false)
-    }
+  function openReply() {
+    setQuotedComment(null)
+    setComposing(true)
+  }
+
+  function handlePosted(comment) {
+    setComments((prev) => [...prev, comment])
+    setComposing(false)
+    setQuotedComment(null)
   }
 
   async function handleDeleteComment(commentId) {
@@ -109,7 +218,6 @@ export default function Post() {
     ? DOMPurify.sanitize(marked.parse(post.description))
     : null
   const hasMusic = post.music_song || post.music_artist || post.music_album
-
   const commentById = Object.fromEntries(comments.map((c) => [c.id, c]))
 
   return (
@@ -146,10 +254,7 @@ export default function Post() {
           </div>
 
           <div style={styles.byline}>
-            <span
-              style={styles.username}
-              onClick={() => navigate(`/@${post.user.username}`)}
-            >
+            <span style={styles.username} onClick={() => navigate(`/@${post.user.username}`)}>
               @{post.user.username}
             </span>
             <span style={styles.muted}>
@@ -176,16 +281,25 @@ export default function Post() {
           )}
 
           {descHtml && (
-            <div
-              style={styles.description}
-              dangerouslySetInnerHTML={{ __html: descHtml }}
-            />
+            <div style={styles.description} dangerouslySetInnerHTML={{ __html: descHtml }} />
           )}
         </div>
 
         {/* Comment thread */}
         <div style={styles.thread}>
-          <div style={styles.threadDivider} />
+          <div style={styles.threadBar}>
+            <span style={styles.threadLabel}>
+              {comments.length} {comments.length === 1 ? 'reply' : 'replies'}
+            </span>
+            {user ? (
+              <button style={styles.replyBtn} onClick={openReply}>+ reply</button>
+            ) : (
+              <span style={styles.muted}>
+                <span style={styles.actionLink} onClick={() => navigate('/login')}>log in</span>
+                {' '}to reply
+              </span>
+            )}
+          </div>
 
           {comments.map((c) => {
             const isOwnComment = user?.username === c.user.username
@@ -196,7 +310,6 @@ export default function Post() {
 
             return (
               <div key={c.id} style={styles.comment}>
-                {/* Quoted preview */}
                 {quoted && (
                   <div style={styles.quotedBlock}>
                     <span style={styles.quotedAuthor}>@{quoted.user.username}</span>
@@ -205,13 +318,12 @@ export default function Post() {
                         {quoted.body.length > 120 ? quoted.body.slice(0, 120) + '…' : quoted.body}
                       </span>
                     )}
-                    {quoted.media_path && !quoted.body && (
+                    {!quoted.body && quoted.media_path && (
                       <span style={styles.muted}>[media]</span>
                     )}
                   </div>
                 )}
 
-                {/* Comment media */}
                 {c.media_path && (
                   <div style={styles.commentMediaWrap}>
                     {c.media_type === 'video' ? (
@@ -222,7 +334,6 @@ export default function Post() {
                   </div>
                 )}
 
-                {/* Comment body */}
                 {editingId === c.id ? (
                   <form onSubmit={handleEditComment} style={styles.editForm}>
                     <textarea
@@ -238,18 +349,11 @@ export default function Post() {
                     </div>
                   </form>
                 ) : bodyHtml ? (
-                  <div
-                    style={styles.commentBody}
-                    dangerouslySetInnerHTML={{ __html: bodyHtml }}
-                  />
+                  <div style={styles.commentBody} dangerouslySetInnerHTML={{ __html: bodyHtml }} />
                 ) : null}
 
-                {/* Comment meta */}
                 <div style={styles.commentMeta}>
-                  <span
-                    style={styles.commentAuthor}
-                    onClick={() => navigate(`/@${c.user.username}`)}
-                  >
+                  <span style={styles.commentAuthor} onClick={() => navigate(`/@${c.user.username}`)}>
                     @{c.user.username}
                   </span>
                   <span style={styles.muted}>
@@ -257,7 +361,7 @@ export default function Post() {
                     {c.is_edited && ' · edited'}
                   </span>
                   {user && (
-                    <span style={styles.actionLink} onClick={() => quoteComment(c)}>quote</span>
+                    <span style={styles.actionLink} onClick={() => openQuote(c)}>quote</span>
                   )}
                   {isOwnComment && editingId !== c.id && (
                     <span style={styles.actionLink} onClick={() => { setEditingId(c.id); setEditBody(c.body || '') }}>edit</span>
@@ -269,58 +373,18 @@ export default function Post() {
               </div>
             )
           })}
-
-          {/* Reply box */}
-          {user ? (
-            <form onSubmit={handleSubmitReply} style={styles.replyForm}>
-              {quotedId && commentById[quotedId] && (
-                <div style={styles.quotedBlock}>
-                  <span style={styles.quotedAuthor}>quoting @{commentById[quotedId].user.username}</span>
-                  {commentById[quotedId].body && (
-                    <span style={styles.quotedBody}>
-                      {commentById[quotedId].body.length > 120
-                        ? commentById[quotedId].body.slice(0, 120) + '…'
-                        : commentById[quotedId].body}
-                    </span>
-                  )}
-                  <span style={styles.actionLink} onClick={() => setQuotedId(null)}>✕</span>
-                </div>
-              )}
-              <textarea
-                ref={replyRef}
-                style={styles.textarea}
-                placeholder="add a comment…"
-                value={replyBody}
-                onChange={(e) => setReplyBody(e.target.value)}
-                rows={3}
-              />
-              <div style={styles.replyActions}>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/gif,video/mp4,video/quicktime"
-                  style={styles.fileInput}
-                  onChange={(e) => setReplyFile(e.target.files[0] || null)}
-                />
-                {replyError && <span style={styles.errorText}>{replyError}</span>}
-                <button
-                  type="submit"
-                  style={styles.btn}
-                  disabled={submitting || (!replyBody.trim() && !replyFile)}
-                >
-                  {submitting ? 'posting…' : 'post'}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <p style={styles.muted}>
-              <span style={styles.actionLink} onClick={() => navigate('/login')}>log in</span>
-              {' '}to comment
-            </p>
-          )}
         </div>
 
       </div>
+
+      {composing && (
+        <ComposeModal
+          postId={id}
+          quotedComment={quotedComment}
+          onClose={() => { setComposing(false); setQuotedComment(null) }}
+          onPosted={handlePosted}
+        />
+      )}
     </div>
   )
 }
@@ -383,7 +447,16 @@ const styles = {
 
   // Thread
   thread: { display: 'flex', flexDirection: 'column', gap: '20px' },
-  threadDivider: { borderTop: '1px solid var(--border)' },
+  threadBar: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    borderTop: '1px solid var(--border)', paddingTop: '16px',
+  },
+  threadLabel: { color: 'var(--text-muted)', fontSize: '13px' },
+  replyBtn: {
+    background: 'transparent', border: '1px solid var(--accent)',
+    color: 'var(--accent)', borderRadius: '4px', padding: '5px 14px',
+    cursor: 'pointer', fontSize: '13px',
+  },
   comment: {
     display: 'flex', flexDirection: 'column', gap: '8px',
     paddingBottom: '20px', borderBottom: '1px solid var(--border)',
@@ -400,21 +473,47 @@ const styles = {
   },
   quotedAuthor: { color: 'var(--accent)', fontWeight: 'bold', flexShrink: 0 },
   quotedBody: { color: 'var(--text-muted)', fontStyle: 'italic' },
-
-  // Reply form
-  replyForm: { display: 'flex', flexDirection: 'column', gap: '8px' },
+  editForm: { display: 'flex', flexDirection: 'column', gap: '8px' },
+  editActions: { display: 'flex', gap: '12px', alignItems: 'center' },
   textarea: {
     width: '100%', background: 'var(--surface)', border: '1px solid var(--border)',
     borderRadius: '4px', color: 'inherit', fontFamily: 'inherit', fontSize: '14px',
     padding: '10px 12px', resize: 'vertical', boxSizing: 'border-box',
   },
-  replyActions: { display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' },
-  fileInput: { fontSize: '13px', color: 'var(--text-muted)' },
   btn: {
     background: 'var(--accent)', color: '#000', border: 'none', borderRadius: '4px',
     padding: '6px 16px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold',
   },
   errorText: { color: 'var(--error)', fontSize: '13px' },
-  editForm: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  editActions: { display: 'flex', gap: '12px', alignItems: 'center' },
+
+  // Modal
+  overlay: {
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    zIndex: 100, padding: '24px',
+  },
+  modal: {
+    background: 'var(--bg, #111)', border: '1px solid var(--border)',
+    borderRadius: '6px', width: '100%', maxWidth: '560px',
+    display: 'flex', flexDirection: 'column', gap: '16px', padding: '24px',
+  },
+  modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  modalTitle: { fontSize: '16px', fontWeight: 'bold' },
+  closeBtn: { color: 'var(--text-muted)', cursor: 'pointer', fontSize: '16px' },
+  composeForm: { display: 'flex', flexDirection: 'column', gap: '12px' },
+  composeActions: { display: 'flex', gap: '12px', alignItems: 'center' },
+  attachLabel: {
+    color: 'var(--accent)', cursor: 'pointer', fontSize: '13px',
+    border: '1px solid var(--border)', borderRadius: '4px', padding: '5px 12px',
+  },
+  previewWrap: {
+    position: 'relative', borderRadius: '4px', overflow: 'hidden',
+    background: 'var(--surface)', maxWidth: '100%',
+  },
+  previewMedia: { width: '100%', maxHeight: '300px', objectFit: 'contain', display: 'block' },
+  clearFile: {
+    position: 'absolute', top: '8px', right: '8px',
+    background: 'rgba(0,0,0,0.6)', color: '#fff', borderRadius: '3px',
+    padding: '3px 8px', fontSize: '12px', cursor: 'pointer',
+  },
 }
