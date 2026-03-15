@@ -33,10 +33,10 @@ class Post(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    title = Column(String(255), nullable=False)
+    title = Column(String(255))
     description = Column(Text)
-    media_path = Column(String(500), nullable=False)
-    media_type = Column(String(10), nullable=False)  # 'image' or 'video'
+    media_path = Column(String(500))
+    media_type = Column(String(10))  # 'image' or 'video'
     thumbnail_path = Column(String(500))
     music_song = Column(String(255))
     music_artist = Column(String(255))
@@ -45,6 +45,8 @@ class Post(Base):
     is_edited = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    parent_post_id = Column(Integer, ForeignKey("posts.id"), nullable=True)
+    quoted_post_id = Column(Integer, ForeignKey("posts.id"), nullable=True)
 
     user = relationship("User", back_populates="posts")
 
@@ -80,25 +82,6 @@ class Session(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="sessions")
-
-
-class Comment(Base):
-    __tablename__ = "comments"
-
-    id = Column(Integer, primary_key=True)
-    post_id = Column(Integer, ForeignKey("posts.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    body = Column(Text)
-    media_path = Column(String(500))
-    media_type = Column(String(10))
-    quoted_comment_id = Column(Integer, ForeignKey("comments.id"), nullable=True)
-    is_edited = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    edited_at = Column(DateTime)
-
-    user = relationship("User")
-    post = relationship("Post")
-    quoted_comment = relationship("Comment", remote_side="Comment.id")
 
 
 class Block(Base):

@@ -3,11 +3,12 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 
 from app.auth import hash_password
 from app.database import Base, SessionLocal, engine
 from app.models import User
-from app.routers import admin, auth, comments, follows, posts, users
+from app.routers import admin, auth, blocks, follows, posts, users
 
 app = FastAPI(title="wicky.tv API")
 
@@ -24,7 +25,7 @@ app.include_router(admin.router)
 app.include_router(users.router)
 app.include_router(follows.router)
 app.include_router(posts.router)
-app.include_router(comments.router)
+app.include_router(blocks.router)
 
 UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "/uploads")
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR, check_dir=False), name="uploads")
@@ -33,7 +34,28 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR, check_dir=False), name="
 @app.on_event("startup")
 async def startup():
     Base.metadata.create_all(bind=engine)
+    _migrate()
     _seed_admin()
+
+
+def _migrate():
+    db = SessionLocal()
+    try:
+        db.execute(text(
+            "ALTER TABLE posts ADD COLUMN IF NOT EXISTS parent_post_id INTEGER REFERENCES posts(id)"
+        ))
+        db.execute(text(
+            "ALTER TABLE posts ADD COLUMN IF NOT EXISTS quoted_post_id INTEGER REFERENCES posts(id)"
+        ))
+        db.execute(text("ALTER TABLE posts ALTER COLUMN title DROP NOT NULL"))
+        db.execute(text("ALTER TABLE posts ALTER COLUMN media_path DROP NOT NULL"))
+        db.execute(text("ALTER TABLE posts ALTER COLUMN media_type DROP NOT NULL"))
+        db.execute(text("DROP TABLE IF EXISTS comments"))
+        db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
 
 
 def _seed_admin():

@@ -2,131 +2,234 @@ import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import {
-  createComment, deleteComment, deletePost, editComment,
-  getPost, listComments,
-} from '../api'
+import { createPost, deletePost, getPost, listReplies, updatePost } from '../api'
 import { useAuth } from '../App'
 
-// ── Compose modal ────────────────────────────────────────────────────────────
+// ── Compose modal (used for both new replies and editing) ────────────────────
 
-function ComposeModal({ postId, quotedComment, onClose, onPosted }) {
-  const [body, setBody] = useState('')
+function ComposeModal({ postId, quotedPost, editingPost, onClose, onPosted, onEdited }) {
+  const isEdit = !!editingPost
+
+  const [description, setDescription] = useState(editingPost?.description || '')
+  const [musicSong, setMusicSong] = useState(editingPost?.music_song || '')
+  const [musicArtist, setMusicArtist] = useState(editingPost?.music_artist || '')
+  const [musicAlbum, setMusicAlbum] = useState(editingPost?.music_album || '')
+  const [tags, setTags] = useState(editingPost?.tags || '')
   const [file, setFile] = useState(null)
-  const [preview, setPreview] = useState(null) // { url, type }
+  const [preview, setPreview] = useState(null)
+  const [showMusic, setShowMusic] = useState(
+    !!(editingPost?.music_song || editingPost?.music_artist || editingPost?.music_album)
+  )
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const textareaRef = useRef(null)
   const fileRef = useRef(null)
 
-  useEffect(() => {
-    textareaRef.current?.focus()
-  }, [])
+  useEffect(() => { textareaRef.current?.focus() }, [])
 
   function handleFile(e) {
     const f = e.target.files[0]
     if (!f) { setFile(null); setPreview(null); return }
     setFile(f)
-    const isVideo = f.type.startsWith('video/')
-    if (isVideo) {
-      setPreview({ url: URL.createObjectURL(f), type: 'video' })
-    } else {
-      setPreview({ url: URL.createObjectURL(f), type: 'image' })
-    }
+    setPreview({ url: URL.createObjectURL(f), type: f.type.startsWith('video/') ? 'video' : 'image' })
   }
 
   function clearFile() {
     if (preview) URL.revokeObjectURL(preview.url)
-    setFile(null)
-    setPreview(null)
+    setFile(null); setPreview(null)
     if (fileRef.current) fileRef.current.value = ''
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!body.trim() && !file) return
-    setSubmitting(true)
-    setError('')
+    setSubmitting(true); setError('')
     try {
-      const c = await createComment(postId, {
-        body: body.trim() || undefined,
-        quotedCommentId: quotedComment?.id,
-        file,
-      })
-      if (preview) URL.revokeObjectURL(preview.url)
-      onPosted(c)
+      const form = new FormData()
+      if (description.trim()) form.append('description', description.trim())
+      if (musicSong.trim()) form.append('music_song', musicSong.trim())
+      if (musicArtist.trim()) form.append('music_artist', musicArtist.trim())
+      if (musicAlbum.trim()) form.append('music_album', musicAlbum.trim())
+      if (tags.trim()) form.append('tags', tags.trim())
+
+      let result
+      if (isEdit) {
+        result = await updatePost(editingPost.id, form)
+        if (preview) URL.revokeObjectURL(preview.url)
+        onEdited(result)
+      } else {
+        form.append('parent_post_id', postId)
+        if (quotedPost) form.append('quoted_post_id', quotedPost.id)
+        if (file) form.append('media', file)
+        result = await createPost(form)
+        if (preview) URL.revokeObjectURL(preview.url)
+        onPosted(result)
+      }
     } catch (err) {
       setError(err.message)
       setSubmitting(false)
     }
   }
 
+  const canSubmit = description.trim() || file || musicSong.trim() || musicArtist.trim() || musicAlbum.trim()
+
   return (
     <div style={styles.overlay} onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div style={styles.modal}>
         <div style={styles.modalHeader}>
-          <span style={styles.modalTitle}>reply</span>
+          <span style={styles.modalTitle}>{isEdit ? 'edit reply' : 'reply'}</span>
           <span style={styles.closeBtn} onClick={onClose}>✕</span>
         </div>
 
-        {quotedComment && (
+        {quotedPost && (
           <div style={styles.quotedBlock}>
-            <span style={styles.quotedAuthor}>@{quotedComment.user.username}</span>
-            {quotedComment.body && (
+            <span style={styles.quotedAuthor}>@{quotedPost.user.username}</span>
+            {quotedPost.description && (
               <span style={styles.quotedBody}>
-                {quotedComment.body.length > 120
-                  ? quotedComment.body.slice(0, 120) + '…'
-                  : quotedComment.body}
+                {quotedPost.description.length > 120
+                  ? quotedPost.description.slice(0, 120) + '…'
+                  : quotedPost.description}
               </span>
             )}
-            {!quotedComment.body && quotedComment.media_path && (
+            {!quotedPost.description && quotedPost.media_path && (
               <span style={styles.muted}>[media]</span>
             )}
           </div>
         )}
 
         <form onSubmit={handleSubmit} style={styles.composeForm}>
+          {/* Media — only for new replies, not edits */}
+          {!isEdit && (
+            <>
+              {preview ? (
+                <div style={styles.previewWrap}>
+                  {preview.type === 'video'
+                    ? <video src={preview.url} style={styles.previewMedia} controls />
+                    : <img src={preview.url} style={styles.previewMedia} alt="" />}
+                  <span style={styles.clearFile} onClick={clearFile}>remove</span>
+                </div>
+              ) : (
+                <label style={styles.mediaPicker}>
+                  + attach photo or video
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,video/mp4,video/quicktime"
+                    style={{ display: 'none' }}
+                    onChange={handleFile}
+                  />
+                </label>
+              )}
+            </>
+          )}
+
           <textarea
             ref={textareaRef}
             style={styles.textarea}
             placeholder="say something…"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
             rows={4}
           />
 
-          {preview && (
-            <div style={styles.previewWrap}>
-              {preview.type === 'video' ? (
-                <video src={preview.url} style={styles.previewMedia} controls />
-              ) : (
-                <img src={preview.url} style={styles.previewMedia} alt="attachment preview" />
-              )}
-              <span style={styles.clearFile} onClick={clearFile}>remove</span>
+          <div style={styles.tagsRow}>
+            <input
+              style={styles.tagsInput}
+              placeholder="tags (comma-separated)"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+            />
+          </div>
+
+          <span style={styles.toggle} onClick={() => setShowMusic(m => !m)}>
+            {showMusic ? '— hide music' : '+ music'}
+          </span>
+          {showMusic && (
+            <div style={styles.musicFields}>
+              <input style={styles.musicInput} placeholder="song" value={musicSong} onChange={(e) => setMusicSong(e.target.value)} maxLength={255} />
+              <input style={styles.musicInput} placeholder="artist" value={musicArtist} onChange={(e) => setMusicArtist(e.target.value)} maxLength={255} />
+              <input style={styles.musicInput} placeholder="album" value={musicAlbum} onChange={(e) => setMusicAlbum(e.target.value)} maxLength={255} />
             </div>
           )}
 
+          {error && <span style={styles.errorText}>{error}</span>}
+
           <div style={styles.composeActions}>
-            <label style={styles.attachLabel}>
-              attach
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/jpeg,image/png,image/gif,video/mp4,video/quicktime"
-                style={{ display: 'none' }}
-                onChange={handleFile}
-              />
-            </label>
-            {error && <span style={styles.errorText}>{error}</span>}
             <button
               type="submit"
-              style={{ ...styles.btn, marginLeft: 'auto' }}
-              disabled={submitting || (!body.trim() && !file)}
+              style={{ ...styles.btn, marginLeft: 'auto', opacity: (!canSubmit || submitting) ? 0.5 : 1 }}
+              disabled={submitting || !canSubmit}
             >
-              {submitting ? 'posting…' : 'post'}
+              {submitting ? (isEdit ? 'saving…' : 'posting…') : (isEdit ? 'save' : 'post')}
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+// ── Reply card (same shape as the post above) ────────────────────────────────
+
+function ReplyCard({ reply, replyById, user, onQuote, onEdit, onDelete, navigate }) {
+  const isOwn = user?.username === reply.user.username
+  const bodyHtml = reply.description
+    ? DOMPurify.sanitize(marked.parse(reply.description))
+    : null
+  const quoted = reply.quoted_post_id ? replyById[reply.quoted_post_id] : null
+  const hasMusic = reply.music_song || reply.music_artist || reply.music_album
+
+  return (
+    <div style={styles.reply}>
+      {quoted && (
+        <div style={styles.quotedBlock}>
+          <span style={styles.quotedAuthor}>@{quoted.user.username}</span>
+          {quoted.description && (
+            <span style={styles.quotedBody}>
+              {quoted.description.length > 120 ? quoted.description.slice(0, 120) + '…' : quoted.description}
+            </span>
+          )}
+          {!quoted.description && quoted.media_path && <span style={styles.muted}>[media]</span>}
+        </div>
+      )}
+
+      {reply.media_path && (
+        <div style={styles.replyMediaWrap}>
+          {reply.media_type === 'video'
+            ? <video src={`/uploads/${reply.media_path}`} controls style={styles.replyMedia} />
+            : <img src={`/uploads/${reply.media_path}`} alt="" style={styles.replyMedia} />}
+        </div>
+      )}
+
+      {bodyHtml && (
+        <div style={styles.replyBody} dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+      )}
+
+      {reply.tags && (
+        <div style={styles.tags}>
+          {reply.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => (
+            <span key={tag} style={styles.tag}>{tag}</span>
+          ))}
+        </div>
+      )}
+
+      {hasMusic && (
+        <div style={styles.music}>
+          <span style={styles.musicIcon}>♪</span>
+          <span>{[reply.music_song, reply.music_artist, reply.music_album].filter(Boolean).join(' — ')}</span>
+        </div>
+      )}
+
+      <div style={styles.replyMeta}>
+        <span style={styles.replyAuthor} onClick={() => navigate(`/@${reply.user.username}`)}>
+          @{reply.user.username}
+        </span>
+        <span style={styles.muted}>
+          {new Date(reply.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          {reply.is_edited && ' · edited'}
+        </span>
+        {user && <span style={styles.actionLink} onClick={() => onQuote(reply)}>quote</span>}
+        {isOwn && <span style={styles.actionLink} onClick={() => onEdit(reply)}>edit</span>}
+        {(isOwn || user?.is_admin) && <span style={styles.actionDanger} onClick={() => onDelete(reply.id)}>delete</span>}
       </div>
     </div>
   )
@@ -142,66 +245,42 @@ export default function Post() {
   const [error, setError] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const [comments, setComments] = useState([])
+  const [replies, setReplies] = useState([])
   const [composing, setComposing] = useState(false)
-  const [quotedComment, setQuotedComment] = useState(null)
-  const [editingId, setEditingId] = useState(null)
-  const [editBody, setEditBody] = useState('')
+  const [quotedPost, setQuotedPost] = useState(null)
+  const [editingPost, setEditingPost] = useState(null)
 
   useEffect(() => {
-    getPost(id)
-      .then(setPost)
-      .catch(() => setError('Post not found'))
-    listComments(id)
-      .then(setComments)
-      .catch(() => {})
+    getPost(id).then(setPost).catch(() => setError('Post not found'))
+    listReplies(id).then(setReplies).catch(() => {})
   }, [id])
 
-  async function handleDelete() {
+  async function handleDeletePost() {
     try {
       await deletePost(id)
       navigate(`/@${post.user.username}`)
-    } catch (err) {
-      setError(err.message)
-    }
+    } catch (err) { setError(err.message) }
   }
 
-  function openQuote(comment) {
-    setQuotedComment(comment)
-    setComposing(true)
-  }
-
-  function openReply() {
-    setQuotedComment(null)
-    setComposing(true)
-  }
-
-  function handlePosted(comment) {
-    setComments((prev) => [...prev, comment])
-    setComposing(false)
-    setQuotedComment(null)
-  }
-
-  async function handleDeleteComment(commentId) {
+  async function handleDeleteReply(replyId) {
     try {
-      await deleteComment(commentId)
-      setComments((prev) => prev.filter((c) => c.id !== commentId))
-    } catch (err) {
-      setError(err.message)
-    }
+      await deletePost(replyId)
+      setReplies((prev) => prev.filter((r) => r.id !== replyId))
+    } catch (err) { setError(err.message) }
   }
 
-  async function handleEditComment(e) {
-    e.preventDefault()
-    if (!editBody.trim()) return
-    try {
-      const updated = await editComment(editingId, editBody.trim())
-      setComments((prev) => prev.map((c) => c.id === updated.id ? updated : c))
-      setEditingId(null)
-      setEditBody('')
-    } catch (err) {
-      setError(err.message)
-    }
+  function openReply() { setQuotedPost(null); setEditingPost(null); setComposing(true) }
+  function openQuote(reply) { setQuotedPost(reply); setEditingPost(null); setComposing(true) }
+  function openEdit(reply) { setEditingPost(reply); setQuotedPost(null); setComposing(true) }
+
+  function handlePosted(reply) {
+    setReplies((prev) => [...prev, reply])
+    setComposing(false); setQuotedPost(null)
+  }
+
+  function handleEdited(updated) {
+    setReplies((prev) => prev.map((r) => r.id === updated.id ? updated : r))
+    setComposing(false); setEditingPost(null)
   }
 
   if (error) return (
@@ -214,27 +293,23 @@ export default function Post() {
   if (!post) return null
 
   const isOwn = user?.username === post.user.username
-  const descHtml = post.description
-    ? DOMPurify.sanitize(marked.parse(post.description))
-    : null
+  const descHtml = post.description ? DOMPurify.sanitize(marked.parse(post.description)) : null
   const hasMusic = post.music_song || post.music_artist || post.music_album
-  const commentById = Object.fromEntries(comments.map((c) => [c.id, c]))
+  const replyById = Object.fromEntries(replies.map((r) => [r.id, r]))
 
   return (
     <div style={styles.page}>
       <Header navigate={navigate} user={user} />
       <div style={styles.body}>
 
-        {/* Media */}
+        {/* Post media */}
         <div style={styles.mediaWrap}>
-          {post.media_type === 'video' ? (
-            <video src={`/uploads/${post.media_path}`} controls style={styles.media} />
-          ) : (
-            <img src={`/uploads/${post.media_path}`} alt={post.title} style={styles.media} />
-          )}
+          {post.media_type === 'video'
+            ? <video src={`/uploads/${post.media_path}`} controls style={styles.media} />
+            : <img src={`/uploads/${post.media_path}`} alt={post.title} style={styles.media} />}
         </div>
 
-        {/* Title + meta */}
+        {/* Post meta */}
         <div style={styles.meta}>
           <div style={styles.titleRow}>
             <h1 style={styles.title}>{post.title}</h1>
@@ -243,7 +318,7 @@ export default function Post() {
                 <span style={styles.actionLink} onClick={() => navigate(`/post/${id}/edit`)}>edit</span>
                 {confirmDelete ? (
                   <>
-                    <span style={styles.actionDanger} onClick={handleDelete}>confirm delete</span>
+                    <span style={styles.actionDanger} onClick={handleDeletePost}>confirm delete</span>
                     <span style={styles.actionLink} onClick={() => setConfirmDelete(false)}>cancel</span>
                   </>
                 ) : (
@@ -274,9 +349,7 @@ export default function Post() {
           {hasMusic && (
             <div style={styles.music}>
               <span style={styles.musicIcon}>♪</span>
-              <span>
-                {[post.music_song, post.music_artist, post.music_album].filter(Boolean).join(' — ')}
-              </span>
+              <span>{[post.music_song, post.music_artist, post.music_album].filter(Boolean).join(' — ')}</span>
             </div>
           )}
 
@@ -285,11 +358,11 @@ export default function Post() {
           )}
         </div>
 
-        {/* Comment thread */}
+        {/* Thread */}
         <div style={styles.thread}>
           <div style={styles.threadBar}>
             <span style={styles.threadLabel}>
-              {comments.length} {comments.length === 1 ? 'reply' : 'replies'}
+              {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
             </span>
             {user ? (
               <button style={styles.replyBtn} onClick={openReply}>+ reply</button>
@@ -301,78 +374,18 @@ export default function Post() {
             )}
           </div>
 
-          {comments.map((c) => {
-            const isOwnComment = user?.username === c.user.username
-            const bodyHtml = c.body
-              ? DOMPurify.sanitize(marked.parse(c.body))
-              : null
-            const quoted = c.quoted_comment_id ? commentById[c.quoted_comment_id] : null
-
-            return (
-              <div key={c.id} style={styles.comment}>
-                {quoted && (
-                  <div style={styles.quotedBlock}>
-                    <span style={styles.quotedAuthor}>@{quoted.user.username}</span>
-                    {quoted.body && (
-                      <span style={styles.quotedBody}>
-                        {quoted.body.length > 120 ? quoted.body.slice(0, 120) + '…' : quoted.body}
-                      </span>
-                    )}
-                    {!quoted.body && quoted.media_path && (
-                      <span style={styles.muted}>[media]</span>
-                    )}
-                  </div>
-                )}
-
-                {c.media_path && (
-                  <div style={styles.commentMediaWrap}>
-                    {c.media_type === 'video' ? (
-                      <video src={`/uploads/${c.media_path}`} controls style={styles.commentMedia} />
-                    ) : (
-                      <img src={`/uploads/${c.media_path}`} alt="" style={styles.commentMedia} />
-                    )}
-                  </div>
-                )}
-
-                {editingId === c.id ? (
-                  <form onSubmit={handleEditComment} style={styles.editForm}>
-                    <textarea
-                      style={styles.textarea}
-                      value={editBody}
-                      onChange={(e) => setEditBody(e.target.value)}
-                      rows={3}
-                      autoFocus
-                    />
-                    <div style={styles.editActions}>
-                      <button type="submit" style={styles.btn}>save</button>
-                      <span style={styles.actionLink} onClick={() => { setEditingId(null); setEditBody('') }}>cancel</span>
-                    </div>
-                  </form>
-                ) : bodyHtml ? (
-                  <div style={styles.commentBody} dangerouslySetInnerHTML={{ __html: bodyHtml }} />
-                ) : null}
-
-                <div style={styles.commentMeta}>
-                  <span style={styles.commentAuthor} onClick={() => navigate(`/@${c.user.username}`)}>
-                    @{c.user.username}
-                  </span>
-                  <span style={styles.muted}>
-                    {new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    {c.is_edited && ' · edited'}
-                  </span>
-                  {user && (
-                    <span style={styles.actionLink} onClick={() => openQuote(c)}>quote</span>
-                  )}
-                  {isOwnComment && editingId !== c.id && (
-                    <span style={styles.actionLink} onClick={() => { setEditingId(c.id); setEditBody(c.body || '') }}>edit</span>
-                  )}
-                  {(isOwnComment || user?.is_admin) && (
-                    <span style={styles.actionDanger} onClick={() => handleDeleteComment(c.id)}>delete</span>
-                  )}
-                </div>
-              </div>
-            )
-          })}
+          {replies.map((r) => (
+            <ReplyCard
+              key={r.id}
+              reply={r}
+              replyById={replyById}
+              user={user}
+              onQuote={openQuote}
+              onEdit={openEdit}
+              onDelete={handleDeleteReply}
+              navigate={navigate}
+            />
+          ))}
         </div>
 
       </div>
@@ -380,9 +393,11 @@ export default function Post() {
       {composing && (
         <ComposeModal
           postId={id}
-          quotedComment={quotedComment}
-          onClose={() => { setComposing(false); setQuotedComment(null) }}
+          quotedPost={quotedPost}
+          editingPost={editingPost}
+          onClose={() => { setComposing(false); setQuotedPost(null); setEditingPost(null) }}
           onPosted={handlePosted}
+          onEdited={handleEdited}
         />
       )}
     </div>
@@ -457,15 +472,15 @@ const styles = {
     color: 'var(--accent)', borderRadius: '4px', padding: '5px 14px',
     cursor: 'pointer', fontSize: '13px',
   },
-  comment: {
+  reply: {
     display: 'flex', flexDirection: 'column', gap: '8px',
     paddingBottom: '20px', borderBottom: '1px solid var(--border)',
   },
-  commentMeta: { display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' },
-  commentAuthor: { color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' },
-  commentBody: { lineHeight: '1.6', fontSize: '14px' },
-  commentMediaWrap: { borderRadius: '4px', overflow: 'hidden', maxWidth: '500px' },
-  commentMedia: { width: '100%', maxHeight: '400px', objectFit: 'contain', display: 'block' },
+  replyMeta: { display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' },
+  replyAuthor: { color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' },
+  replyBody: { lineHeight: '1.6', fontSize: '14px' },
+  replyMediaWrap: { borderRadius: '4px', overflow: 'hidden', maxWidth: '500px' },
+  replyMedia: { width: '100%', maxHeight: '400px', objectFit: 'contain', display: 'block' },
   quotedBlock: {
     background: 'var(--surface)', borderLeft: '3px solid var(--border)',
     padding: '8px 12px', borderRadius: '3px', fontSize: '13px',
@@ -473,47 +488,59 @@ const styles = {
   },
   quotedAuthor: { color: 'var(--accent)', fontWeight: 'bold', flexShrink: 0 },
   quotedBody: { color: 'var(--text-muted)', fontStyle: 'italic' },
-  editForm: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  editActions: { display: 'flex', gap: '12px', alignItems: 'center' },
-  textarea: {
-    width: '100%', background: 'var(--surface)', border: '1px solid var(--border)',
-    borderRadius: '4px', color: 'inherit', fontFamily: 'inherit', fontSize: '14px',
-    padding: '10px 12px', resize: 'vertical', boxSizing: 'border-box',
-  },
-  btn: {
-    background: 'var(--accent)', color: '#000', border: 'none', borderRadius: '4px',
-    padding: '6px 16px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold',
-  },
-  errorText: { color: 'var(--error)', fontSize: '13px' },
 
   // Modal
   overlay: {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     zIndex: 100, padding: '24px',
   },
   modal: {
     background: 'var(--bg, #111)', border: '1px solid var(--border)',
-    borderRadius: '6px', width: '100%', maxWidth: '560px',
+    borderRadius: '6px', width: '100%', maxWidth: '560px', maxHeight: '90vh',
     display: 'flex', flexDirection: 'column', gap: '16px', padding: '24px',
+    overflowY: 'auto',
   },
   modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   modalTitle: { fontSize: '16px', fontWeight: 'bold' },
   closeBtn: { color: 'var(--text-muted)', cursor: 'pointer', fontSize: '16px' },
   composeForm: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  composeActions: { display: 'flex', gap: '12px', alignItems: 'center' },
-  attachLabel: {
-    color: 'var(--accent)', cursor: 'pointer', fontSize: '13px',
-    border: '1px solid var(--border)', borderRadius: '4px', padding: '5px 12px',
+  mediaPicker: {
+    border: '2px dashed var(--border)', borderRadius: '4px',
+    padding: '20px', textAlign: 'center', cursor: 'pointer',
+    color: 'var(--text-muted)', fontSize: '13px',
   },
   previewWrap: {
-    position: 'relative', borderRadius: '4px', overflow: 'hidden',
-    background: 'var(--surface)', maxWidth: '100%',
+    position: 'relative', borderRadius: '4px', overflow: 'hidden', background: 'var(--surface)',
   },
-  previewMedia: { width: '100%', maxHeight: '300px', objectFit: 'contain', display: 'block' },
+  previewMedia: { width: '100%', maxHeight: '280px', objectFit: 'contain', display: 'block' },
   clearFile: {
     position: 'absolute', top: '8px', right: '8px',
     background: 'rgba(0,0,0,0.6)', color: '#fff', borderRadius: '3px',
     padding: '3px 8px', fontSize: '12px', cursor: 'pointer',
   },
+  textarea: {
+    width: '100%', background: 'var(--surface)', border: '1px solid var(--border)',
+    borderRadius: '4px', color: 'inherit', fontFamily: 'inherit', fontSize: '14px',
+    padding: '10px 12px', resize: 'vertical', boxSizing: 'border-box',
+  },
+  tagsRow: {},
+  tagsInput: {
+    width: '100%', boxSizing: 'border-box', background: 'var(--surface)',
+    border: '1px solid var(--border)', borderRadius: '4px',
+    color: 'inherit', fontFamily: 'inherit', fontSize: '13px', padding: '7px 10px',
+  },
+  toggle: { color: 'var(--accent)', cursor: 'pointer', fontSize: '13px' },
+  musicFields: { display: 'flex', flexDirection: 'column', gap: '8px' },
+  musicInput: {
+    width: '100%', boxSizing: 'border-box', background: 'var(--surface)',
+    border: '1px solid var(--border)', borderRadius: '4px',
+    color: 'inherit', fontFamily: 'inherit', fontSize: '13px', padding: '7px 10px',
+  },
+  composeActions: { display: 'flex', alignItems: 'center' },
+  btn: {
+    background: 'var(--accent)', color: '#000', border: 'none', borderRadius: '4px',
+    padding: '6px 20px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold',
+  },
+  errorText: { color: 'var(--error)', fontSize: '13px' },
 }
