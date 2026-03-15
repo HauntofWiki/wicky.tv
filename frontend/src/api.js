@@ -109,6 +109,12 @@ export const updatePost = (id, formData) =>
     return res.json()
   })
 
+export const changePassword = (current_password, new_password) =>
+  request('/users/me/password', {
+    method: 'POST',
+    body: JSON.stringify({ current_password, new_password }),
+  })
+
 export const deletePost = (id) => request(`/posts/${id}`, { method: 'DELETE' })
 
 export const uploadAvatar = (file) => {

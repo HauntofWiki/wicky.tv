@@ -2,7 +2,7 @@ import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { updateProfile, uploadAvatar } from '../api'
+import { changePassword, updateProfile, uploadAvatar } from '../api'
 import { useAuth } from '../App'
 
 export default function Settings() {
@@ -18,6 +18,11 @@ export default function Settings() {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showPwForm, setShowPwForm] = useState(false)
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' })
+  const [pwError, setPwError] = useState('')
+  const [pwSuccess, setPwSuccess] = useState('')
+  const [pwSaving, setPwSaving] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -57,6 +62,24 @@ export default function Settings() {
       setError(err.message)
     } finally {
       setUploading(false)
+    }
+  }
+
+  async function handleChangePassword(e) {
+    e.preventDefault()
+    setPwError('')
+    setPwSuccess('')
+    if (pwForm.next !== pwForm.confirm) { setPwError('Passwords do not match'); return }
+    setPwSaving(true)
+    try {
+      await changePassword(pwForm.current, pwForm.next)
+      setPwSuccess('Password updated.')
+      setPwForm({ current: '', next: '', confirm: '' })
+      setShowPwForm(false)
+    } catch (err) {
+      setPwError(err.message)
+    } finally {
+      setPwSaving(false)
     }
   }
 
@@ -179,6 +202,28 @@ export default function Settings() {
             </button>
           </div>
         </form>
+
+        <section style={styles.section}>
+          <div style={styles.sectionLabel}>password</div>
+          {pwSuccess && <p style={styles.successMsg}>{pwSuccess}</p>}
+          {!showPwForm ? (
+            <span style={styles.toggle} onClick={() => setShowPwForm(true)}>change password</span>
+          ) : (
+            <form onSubmit={handleChangePassword} style={styles.form}>
+              <input type="password" placeholder="current password" value={pwForm.current}
+                onChange={e => setPwForm(p => ({ ...p, current: e.target.value }))} required />
+              <input type="password" placeholder="new password" value={pwForm.next}
+                onChange={e => setPwForm(p => ({ ...p, next: e.target.value }))} required />
+              <input type="password" placeholder="confirm new password" value={pwForm.confirm}
+                onChange={e => setPwForm(p => ({ ...p, confirm: e.target.value }))} required />
+              {pwError && <p className="error">{pwError}</p>}
+              <div style={styles.actions}>
+                <button type="submit" disabled={pwSaving}>{pwSaving ? 'saving…' : 'update password'}</button>
+                <button type="button" style={styles.secondaryBtn} onClick={() => { setShowPwForm(false); setPwError(''); setPwForm({ current: '', next: '', confirm: '' }) }}>cancel</button>
+              </div>
+            </form>
+          )}
+        </section>
       </div>
     </div>
   )
@@ -293,6 +338,11 @@ const styles = {
     color: '#4caf50',
     fontSize: '13px',
     marginBottom: '8px',
+  },
+  toggle: {
+    color: 'var(--accent)',
+    cursor: 'pointer',
+    fontSize: '13px',
   },
   muted: {
     color: 'var(--text-muted)',

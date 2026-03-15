@@ -7,7 +7,7 @@ from PIL import Image
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.auth import get_current_user, get_optional_current_user
+from app.auth import get_current_user, get_optional_current_user, hash_password, verify_password
 from app.database import get_db
 from app.models import Follow, User
 
@@ -108,6 +108,26 @@ async def upload_avatar(
     user.profile_picture = f"/uploads/avatars/{filename}"
     db.commit()
     return {"profile_picture": user.profile_picture}
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@router.post("/me/password")
+def change_password(
+    req: ChangePasswordRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(req.current_password, user.password_hash):
+        raise HTTPException(400, "Current password is incorrect")
+    if len(req.new_password) < 8:
+        raise HTTPException(400, "New password must be at least 8 characters")
+    user.password_hash = hash_password(req.new_password)
+    db.commit()
+    return {"ok": True}
 
 
 @router.get("/{username}")
