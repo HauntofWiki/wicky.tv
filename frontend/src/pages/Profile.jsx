@@ -241,6 +241,7 @@ const styles = {
   profileTitle: {
     fontSize: '15px',
     color: 'var(--text)',
+    fontWeight: 'bold',
   },
   editLink: {
     color: 'var(--accent)',
