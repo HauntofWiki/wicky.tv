@@ -24,6 +24,8 @@ class User(Base):
 
     posts = relationship("Post", back_populates="user", cascade="all, delete-orphan")
     sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
+    following = relationship("Follow", foreign_keys="Follow.follower_id", back_populates="follower", cascade="all, delete-orphan")
+    followers = relationship("Follow", foreign_keys="Follow.followed_id", back_populates="followed", cascade="all, delete-orphan")
 
 
 class Post(Base):
@@ -58,6 +60,17 @@ class InviteCode(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class Follow(Base):
+    __tablename__ = "follows"
+
+    follower_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    followed_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    follower = relationship("User", foreign_keys=[follower_id], back_populates="following")
+    followed = relationship("User", foreign_keys=[followed_id], back_populates="followers")
+
+
 class Session(Base):
     __tablename__ = "sessions"
 
@@ -67,3 +80,30 @@ class Session(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="sessions")
+
+
+class Comment(Base):
+    __tablename__ = "comments"
+
+    id = Column(Integer, primary_key=True)
+    post_id = Column(Integer, ForeignKey("posts.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    body = Column(Text)
+    media_path = Column(String(500))
+    media_type = Column(String(10))
+    quoted_comment_id = Column(Integer, ForeignKey("comments.id"), nullable=True)
+    is_edited = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    edited_at = Column(DateTime)
+
+    user = relationship("User")
+    post = relationship("Post")
+    quoted_comment = relationship("Comment", remote_side="Comment.id")
+
+
+class Block(Base):
+    __tablename__ = "blocks"
+
+    blocker_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    blocked_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

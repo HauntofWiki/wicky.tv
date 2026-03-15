@@ -42,6 +42,94 @@ export const updateProfile = (display_name, bio) =>
     body: JSON.stringify({ display_name, bio }),
   })
 
+export const getFeed = () => request('/posts/feed')
+
+export const listUsers = () => request('/users')
+
+export const followUser = (username) =>
+  request(`/users/${username}/follow`, { method: 'POST' })
+
+export const unfollowUser = (username) =>
+  request(`/users/${username}/follow`, { method: 'DELETE' })
+
+export const listPosts = (username) =>
+  request(`/posts${username ? `?username=${encodeURIComponent(username)}` : ''}`)
+
+export const getPost = (id) => request(`/posts/${id}`)
+
+export const updatePost = (id, formData) =>
+  fetch(`/api/posts/${id}`, {
+    method: 'PUT',
+    credentials: 'include',
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Update failed' }))
+      throw new Error(err.detail || 'Update failed')
+    }
+    return res.json()
+  })
+
+export const deletePost = (id) => request(`/posts/${id}`, { method: 'DELETE' })
+
+export const createPost = (formData) =>
+  fetch(`${BASE}/posts`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Upload failed' }))
+      throw new Error(err.detail || 'Upload failed')
+    }
+    return res.json()
+  })
+
+export const listComments = (postId) => request(`/posts/${postId}/comments`)
+
+export const createComment = (postId, { body, quotedCommentId, file }) => {
+  const form = new FormData()
+  if (body) form.append('body', body)
+  if (quotedCommentId != null) form.append('quoted_comment_id', quotedCommentId)
+  if (file) form.append('file', file)
+  return fetch(`${BASE}/posts/${postId}/comments`, {
+    method: 'POST',
+    credentials: 'include',
+    body: form,
+  }).then(async (res) => {
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed' }))
+      throw new Error(err.detail || 'Failed')
+    }
+    return res.json()
+  })
+}
+
+export const editComment = (commentId, body) => {
+  const form = new FormData()
+  form.append('body', body)
+  return fetch(`${BASE}/comments/${commentId}`, {
+    method: 'PATCH',
+    credentials: 'include',
+    body: form,
+  }).then(async (res) => {
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed' }))
+      throw new Error(err.detail || 'Failed')
+    }
+    return res.json()
+  })
+}
+
+export const deleteComment = (commentId) =>
+  request(`/comments/${commentId}`, { method: 'DELETE' })
+
+export const blockUser = (username) =>
+  request(`/users/${username}/block`, { method: 'POST' })
+
+export const unblockUser = (username) =>
+  request(`/users/${username}/block`, { method: 'DELETE' })
+
 export const uploadAvatar = (file) => {
   const form = new FormData()
   form.append('file', file)
