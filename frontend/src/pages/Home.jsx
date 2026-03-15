@@ -33,6 +33,7 @@ export default function Home() {
           )}
           <span style={styles.navLink} onClick={() => navigate('/new')}>new post</span>
           <span style={styles.navLink} onClick={() => navigate('/people')}>people</span>
+          <span style={styles.navLink} onClick={() => navigate('/tags')}>tags</span>
           <span style={styles.navLink} onClick={() => navigate('/settings')}>settings</span>
           <span style={styles.navLink} onClick={() => navigate(`/@${user?.username}`)}>@{user?.username}</span>
           <span style={styles.navLink} onClick={handleLogout}>log out</span>
@@ -49,6 +50,7 @@ export default function Home() {
           )}
           <span className="mobile-nav-menu-item" onClick={() => { navigate('/new'); setMenuOpen(false) }}>new post</span>
           <span className="mobile-nav-menu-item" onClick={() => { navigate('/people'); setMenuOpen(false) }}>people</span>
+          <span className="mobile-nav-menu-item" onClick={() => { navigate('/tags'); setMenuOpen(false) }}>tags</span>
           <span className="mobile-nav-menu-item" onClick={() => { navigate('/settings'); setMenuOpen(false) }}>settings</span>
           <span className="mobile-nav-menu-item" onClick={() => { navigate(`/@${user?.username}`); setMenuOpen(false) }}>@{user?.username}</span>
           <span className="mobile-nav-menu-item" onClick={handleLogout}>log out</span>
