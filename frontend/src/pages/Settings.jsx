@@ -126,7 +126,7 @@ export default function Settings() {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="ruler of the land"
+              placeholder="wicky.tv enjoyer"
               maxLength={100}
             />
             <span style={styles.titlePreview}>
