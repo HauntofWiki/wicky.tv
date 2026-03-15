@@ -220,7 +220,9 @@ function ReplyCard({ reply, replyById, user, onQuote, onEdit, onDelete, navigate
       {reply.tags && (
         <div style={styles.tags}>
           {reply.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => (
-            <span key={tag} style={styles.tag}>{tag}</span>
+            <span key={tag} style={styles.tag} onClick={() => navigate(`/tags/${encodeURIComponent(tag)}`)}>
+              {tag}
+            </span>
           ))}
         </div>
       )}
@@ -354,7 +356,9 @@ export default function Post() {
           {post.tags && (
             <div style={styles.tags}>
               {post.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => (
-                <span key={tag} style={styles.tag}>{tag}</span>
+                <span key={tag} style={styles.tag} onClick={() => navigate(`/tags/${encodeURIComponent(tag)}`)}>
+                  {tag}
+                </span>
               ))}
             </div>
           )}
@@ -464,6 +468,7 @@ const styles = {
   tag: {
     background: 'var(--surface)', border: '1px solid var(--border)',
     borderRadius: '3px', padding: '2px 8px', fontSize: '12px', color: 'var(--text-muted)',
+    cursor: 'pointer',
   },
   music: {
     display: 'flex', gap: '8px', alignItems: 'center',

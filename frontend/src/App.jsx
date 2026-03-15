@@ -2,11 +2,16 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { getMe } from './api'
 import AdminInvites from './pages/AdminInvites'
+import EditPost from './pages/EditPost'
+import People from './pages/People'
 import Home from './pages/Home'
 import Login from './pages/Login'
+import NewPost from './pages/NewPost'
+import Post from './pages/Post'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import Signup from './pages/Signup'
+import Tags from './pages/Tags'
 
 const AuthContext = createContext(null)
 
@@ -46,7 +51,12 @@ export default function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/new" element={<ProtectedRoute><NewPost /></ProtectedRoute>} />
+          <Route path="/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
+          <Route path="/post/:id" element={<Post />} />
+          <Route path="/post/:id/edit" element={<ProtectedRoute><EditPost /></ProtectedRoute>} />
           <Route path="/admin/invites" element={<AdminRoute><AdminInvites /></AdminRoute>} />
+          <Route path="/tags/:tag" element={<Tags />} />
           <Route path="/:username" element={<Profile />} />
           <Route path="/" element={<Navigate to="/home" replace />} />
         </Routes>

@@ -72,6 +72,9 @@ export const unblockUser = (username) =>
 export const listPosts = (username) =>
   request(`/posts${username ? `?username=${encodeURIComponent(username)}` : ''}`)
 
+export const listPostsByTag = (tag) =>
+  request(`/posts?tag=${encodeURIComponent(tag)}`)
+
 export const listReplies = (postId) => request(`/posts/${postId}/replies`)
 
 export const getPost = (id) => request(`/posts/${id}`)

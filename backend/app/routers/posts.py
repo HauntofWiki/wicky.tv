@@ -201,13 +201,19 @@ def get_feed(
 @router.get("")
 def list_posts(
     username: Optional[str] = None,
+    tag: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
     db: Session = Depends(get_db),
 ):
+    from sqlalchemy import func
     q = db.query(Post).join(User).filter(Post.parent_post_id == None)
     if username:
         q = q.filter(User.username == username)
+    if tag:
+        needle = f',{tag.lower().strip()},'
+        padded = func.concat(',', func.lower(Post.tags), ',')
+        q = q.filter(padded.contains(needle))
     posts = q.order_by(Post.created_at.desc()).offset(offset).limit(limit).all()
     return [_post_dict(p) for p in posts]
 
