@@ -131,9 +131,7 @@ export default function Settings() {
             />
             <span style={styles.titlePreview}>
               <span style={styles.previewUsername}>@{user?.username}</span>
-              {title.trim() && (
-                <><span style={styles.titleSep}> ✦</span> <span style={styles.titleText}>{title.trim()}</span></>
-              )}
+              {title.trim() && <span style={styles.titleSep}> ✦ {title.trim()}</span>}
             </span>
           </section>
 
@@ -308,13 +306,5 @@ const styles = {
   },
   titleSep: {
     color: 'var(--title)',
-    marginRight: '2px',
-  },
-  titleText: {
-    color: 'var(--title)',
-  },
-  hint: {
-    color: 'var(--text-muted)',
-    fontSize: '12px',
   },
 }

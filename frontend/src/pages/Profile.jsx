@@ -75,13 +75,11 @@ export default function Profile() {
             <div style={styles.displayName}>
               {profile.display_name || profile.username}
             </div>
+            {profile.title && (
+              <div style={styles.profileTitle}>{profile.title}</div>
+            )}
             <div style={styles.usernameRow}>
               <span style={styles.muted}>@{profile.username}</span>
-              {profile.title && (
-                <span style={styles.titleBadge}>
-                  <span style={styles.titleSep}>✦</span> {profile.title}
-                </span>
-              )}
               {isOwn && (
                 <span style={styles.editLink} onClick={() => navigate('/settings')}>
                   edit profile
@@ -240,12 +238,9 @@ const styles = {
     gap: '14px',
     alignItems: 'center',
   },
-  titleBadge: {
-    color: 'var(--title, #00e8c8)',
-    fontSize: '13px',
-  },
-  titleSep: {
-    color: 'var(--title, #00e8c8)',
+  profileTitle: {
+    fontSize: '15px',
+    color: 'var(--text)',
   },
   editLink: {
     color: 'var(--accent)',
