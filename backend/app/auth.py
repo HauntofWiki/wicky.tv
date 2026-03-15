@@ -51,6 +51,23 @@ def get_current_user(
     return sess.user
 
 
+def get_optional_current_user(
+    session_id: str = Cookie(default=None),
+    db: Session = Depends(get_db),
+):
+    if not session_id:
+        return None
+    sess = (
+        db.query(SessionModel)
+        .filter(
+            SessionModel.id == session_id,
+            SessionModel.expires_at > datetime.utcnow(),
+        )
+        .first()
+    )
+    return sess.user if sess else None
+
+
 def require_admin(user: User = Depends(get_current_user)) -> User:
     if not user.is_admin:
         raise HTTPException(status_code=403, detail="Admin required")

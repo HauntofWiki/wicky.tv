@@ -75,7 +75,7 @@ export default function Settings() {
           </span>
         </div>
       </div>
-      <div style={styles.body}>
+      <div className="page-body" style={styles.body}>
         <h1 style={styles.title}>settings</h1>
 
         <section style={styles.section}>
@@ -194,7 +194,6 @@ const styles = {
     cursor: 'pointer',
   },
   body: {
-    padding: '40px 24px',
     maxWidth: '540px',
     width: '100%',
     margin: '0 auto',

@@ -2,14 +2,14 @@ import os
 import time
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Cookie, Depends, File, HTTPException, UploadFile
 from PIL import Image
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.auth import get_current_user
+from app.auth import get_current_user, get_optional_current_user
 from app.database import get_db
-from app.models import User
+from app.models import Follow, User
 
 router = APIRouter(prefix="/api/users")
 
@@ -32,6 +32,26 @@ def _user_public(user: User) -> dict:
 class UpdateProfileRequest(BaseModel):
     display_name: str | None = None
     bio: str | None = None
+
+
+@router.get("")
+def list_users(
+    db: Session = Depends(get_db),
+    viewer=Depends(get_optional_current_user),
+):
+    users = db.query(User).order_by(User.created_at).all()
+    result = []
+    for u in users:
+        is_following = False
+        if viewer and viewer.id != u.id:
+            is_following = db.query(Follow).filter_by(follower_id=viewer.id, followed_id=u.id).first() is not None
+        result.append({
+            **_user_public(u),
+            "is_admin": u.is_admin,
+            "follower_count": db.query(Follow).filter(Follow.followed_id == u.id).count(),
+            "is_following": is_following,
+        })
+    return result
 
 
 @router.put("/me")
@@ -87,8 +107,25 @@ async def upload_avatar(
 
 
 @router.get("/{username}")
-def get_profile(username: str, db: Session = Depends(get_db)):
+def get_profile(
+    username: str,
+    db: Session = Depends(get_db),
+    viewer=Depends(get_optional_current_user),
+):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(404, "User not found")
-    return _user_public(user)
+
+    follower_count = db.query(Follow).filter(Follow.followed_id == user.id).count()
+    following_count = db.query(Follow).filter(Follow.follower_id == user.id).count()
+    is_following = False
+    if viewer and viewer.id != user.id:
+        is_following = db.query(Follow).filter_by(follower_id=viewer.id, followed_id=user.id).first() is not None
+
+    return {
+        **_user_public(user),
+        "is_admin": user.is_admin,
+        "follower_count": follower_count,
+        "following_count": following_count,
+        "is_following": is_following,
+    }

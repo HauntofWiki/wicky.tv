@@ -13,7 +13,7 @@ from app.auth import (
     verify_password,
 )
 from app.database import get_db
-from app.models import InviteCode
+from app.models import Follow, InviteCode
 from app.models import Session as SessionModel
 from app.models import User
 
@@ -74,6 +74,12 @@ def signup(req: SignupRequest, response: Response, db: Session = Depends(get_db)
     db.add(user)
     code.use_count += 1
     db.flush()
+
+    admin = db.query(User).filter(User.is_admin == True, User.id != user.id).first()
+    if admin:
+        db.add(Follow(follower_id=user.id, followed_id=admin.id))
+        db.add(Follow(follower_id=admin.id, followed_id=user.id))
+
     session_id = create_session(user.id, db)
     _set_session_cookie(response, session_id)
     return {"username": user.username, "is_admin": user.is_admin}

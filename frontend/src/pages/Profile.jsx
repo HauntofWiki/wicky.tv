@@ -2,7 +2,7 @@ import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getProfile } from '../api'
+import { followUser, getProfile, listPosts, unfollowUser } from '../api'
 import { useAuth } from '../App'
 
 export default function Profile() {
@@ -11,19 +11,22 @@ export default function Profile() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
+  const [posts, setPosts] = useState([])
   const [error, setError] = useState('')
+  const [followLoading, setFollowLoading] = useState(false)
 
   useEffect(() => {
     getProfile(username)
       .then(setProfile)
       .catch(() => setError('User not found'))
+    listPosts(username).then(setPosts).catch(() => {})
   }, [username])
 
   if (error) {
     return (
       <div style={styles.page}>
         <Header navigate={navigate} user={user} />
-        <div style={styles.body}>
+        <div className="page-body" style={styles.body}>
           <p style={styles.muted}>{error}</p>
         </div>
       </div>
@@ -33,6 +36,23 @@ export default function Profile() {
   if (!profile) return null
 
   const isOwn = user?.username === profile.username
+
+  async function handleFollow() {
+    setFollowLoading(true)
+    try {
+      if (profile.is_following) {
+        await unfollowUser(profile.username)
+        setProfile(p => ({ ...p, is_following: false, follower_count: p.follower_count - 1 }))
+      } else {
+        await followUser(profile.username)
+        setProfile(p => ({ ...p, is_following: true, follower_count: p.follower_count + 1 }))
+      }
+    } catch (err) {
+      // ignore
+    } finally {
+      setFollowLoading(false)
+    }
+  }
   const bioHtml = profile.bio
     ? DOMPurify.sanitize(marked.parse(profile.bio))
     : null
@@ -40,7 +60,7 @@ export default function Profile() {
   return (
     <div style={styles.page}>
       <Header navigate={navigate} user={user} />
-      <div style={styles.body}>
+      <div className="page-body" style={styles.body}>
         <div style={styles.profileHeader}>
           <div style={styles.avatarWrap}>
             {profile.profile_picture ? (
@@ -62,6 +82,18 @@ export default function Profile() {
                   edit profile
                 </span>
               )}
+              {!isOwn && user && !profile.is_admin && (
+                <span
+                  style={profile.is_following ? styles.unfollowBtn : styles.followBtn}
+                  onClick={followLoading ? undefined : handleFollow}
+                >
+                  {followLoading ? '...' : profile.is_following ? 'unfollow' : 'follow'}
+                </span>
+              )}
+            </div>
+            <div style={styles.followCounts}>
+              <span style={styles.muted}><b style={styles.countNum}>{profile.follower_count}</b> followers</span>
+              <span style={styles.muted}><b style={styles.countNum}>{profile.following_count}</b> following</span>
             </div>
             {profile.created_at && (
               <div style={styles.muted}>
@@ -76,8 +108,33 @@ export default function Profile() {
             )}
           </div>
         </div>
-        <div style={styles.gridPlaceholder}>
-          <p style={styles.muted}>posts coming in phase 3.</p>
+        <div style={styles.gridSection}>
+          {posts.length === 0 ? (
+            <p style={styles.muted}>no posts yet.</p>
+          ) : (
+            <div style={styles.grid}>
+              {posts.map(post => (
+                <div
+                  key={post.id}
+                  style={styles.gridItem}
+                  onClick={() => navigate(`/post/${post.id}`)}
+                >
+                  {post.media_type === 'video' ? (
+                    <div style={styles.videoThumb}>
+                      <span style={styles.playIcon}>▶</span>
+                      <span style={styles.gridItemTitle}>{post.title}</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={`/uploads/${post.thumbnail_path || post.media_path}`}
+                      alt={post.title}
+                      style={styles.gridImg}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -131,7 +188,6 @@ const styles = {
     cursor: 'pointer',
   },
   body: {
-    padding: '40px 24px',
     maxWidth: '800px',
     width: '100%',
     margin: '0 auto',
@@ -184,6 +240,30 @@ const styles = {
     cursor: 'pointer',
     fontSize: '13px',
   },
+  followBtn: {
+    color: 'var(--accent)',
+    cursor: 'pointer',
+    fontSize: '13px',
+    border: '1px solid var(--accent)',
+    borderRadius: '3px',
+    padding: '2px 10px',
+  },
+  unfollowBtn: {
+    color: 'var(--text-muted)',
+    cursor: 'pointer',
+    fontSize: '13px',
+    border: '1px solid var(--border)',
+    borderRadius: '3px',
+    padding: '2px 10px',
+  },
+  followCounts: {
+    display: 'flex',
+    gap: '16px',
+  },
+  countNum: {
+    color: 'var(--text)',
+    fontWeight: 'bold',
+  },
   muted: {
     color: 'var(--text-muted)',
     fontSize: '13px',
@@ -192,8 +272,50 @@ const styles = {
     marginTop: '8px',
     lineHeight: '1.6',
   },
-  gridPlaceholder: {
+  gridSection: {
     borderTop: '1px solid var(--border)',
     paddingTop: '32px',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gap: '4px',
+  },
+  gridItem: {
+    aspectRatio: '1',
+    overflow: 'hidden',
+    cursor: 'pointer',
+    background: 'var(--surface)',
+    position: 'relative',
+  },
+  gridImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
+  },
+  videoThumb: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px',
+    padding: '8px',
+    boxSizing: 'border-box',
+  },
+  playIcon: {
+    color: 'var(--accent)',
+    fontSize: '28px',
+  },
+  gridItemTitle: {
+    color: 'var(--text-muted)',
+    fontSize: '11px',
+    textAlign: 'center',
+    overflow: 'hidden',
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
   },
 }

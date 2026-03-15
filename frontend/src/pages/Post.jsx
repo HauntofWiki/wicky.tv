@@ -75,8 +75,8 @@ function ComposeModal({ postId, quotedPost, editingPost, onClose, onPosted, onEd
   const canSubmit = description.trim() || file || musicSong.trim() || musicArtist.trim() || musicAlbum.trim()
 
   return (
-    <div style={styles.overlay} onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-      <div style={styles.modal}>
+    <div className="modal-overlay" style={styles.overlay} onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="modal-sheet" style={styles.modal}>
         <div style={styles.modalHeader}>
           <span style={styles.modalTitle}>{isEdit ? 'edit reply' : 'reply'}</span>
           <span style={styles.closeBtn} onClick={onClose}>✕</span>
@@ -315,7 +315,7 @@ export default function Post() {
   return (
     <div style={styles.page}>
       <Header navigate={navigate} user={user} />
-      <div style={styles.body}>
+      <div className="page-body" style={styles.body}>
 
         {/* Post media */}
         <div style={styles.mediaWrap}>
@@ -448,7 +448,7 @@ const styles = {
   navLink: { color: 'var(--text-muted)', cursor: 'pointer' },
   body: {
     maxWidth: '800px', width: '100%', margin: '0 auto',
-    padding: '40px 24px', display: 'flex', flexDirection: 'column', gap: '24px',
+    display: 'flex', flexDirection: 'column', gap: '24px',
   },
   mediaWrap: {
     background: 'var(--surface)', borderRadius: '4px', overflow: 'hidden',

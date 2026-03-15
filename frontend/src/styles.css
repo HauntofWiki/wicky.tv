@@ -74,3 +74,77 @@ button:disabled {
   font-size: 13px;
   margin-top: 6px;
 }
+
+/* ── Page body padding (overridden on mobile) ──────────────────────── */
+.page-body {
+  padding: 40px 24px;
+}
+
+/* ── Responsive nav ────────────────────────────────────────────────── */
+.nav-full {
+  display: flex;
+  gap: 20px;
+}
+
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  font-family: inherit;
+}
+
+.mobile-nav-menu {
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.mobile-nav-menu-item {
+  display: block;
+  padding: 14px 24px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.mobile-nav-menu-item:hover {
+  color: var(--text);
+}
+
+/* ── Mobile overrides ──────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  input, textarea {
+    font-size: 16px; /* prevent iOS zoom on focus */
+  }
+
+  .page-body {
+    padding: 20px 16px;
+  }
+
+  .nav-full {
+    display: none;
+  }
+
+  .hamburger-btn {
+    display: flex;
+    align-items: center;
+  }
+
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .modal-sheet {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    max-width: 100% !important;
+    max-height: 88vh !important;
+  }
+}
