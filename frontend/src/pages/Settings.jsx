@@ -130,9 +130,10 @@ export default function Settings() {
               maxLength={100}
             />
             <span style={styles.titlePreview}>
-              {title.trim()
-                ? <><span style={styles.titleSep}>✦</span> <span style={styles.titleText}>{title.trim()}</span></>
-                : <span style={styles.hint}>shows next to your username</span>}
+              <span style={styles.previewUsername}>@{user?.username}</span>
+              {title.trim() && (
+                <><span style={styles.titleSep}> ✦</span> <span style={styles.titleText}>{title.trim()}</span></>
+              )}
             </span>
           </section>
 
@@ -299,7 +300,11 @@ const styles = {
     color: 'var(--text-muted)',
   },
   titlePreview: {
-    fontSize: '13px',
+    fontSize: '14px',
+  },
+  previewUsername: {
+    color: 'var(--accent)',
+    fontWeight: 'bold',
   },
   titleSep: {
     color: 'var(--title)',
