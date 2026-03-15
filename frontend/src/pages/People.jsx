@@ -72,8 +72,10 @@ export default function People() {
                 <div style={styles.info} onClick={() => navigate(`/@${u.username}`)}>
                   <span style={styles.displayName}>{u.display_name || u.username}</span>
                   <span style={styles.muted}>
-                    @{u.username}
-                    {u.title && <span style={styles.titleBadge}> ✦ {u.title}</span>}
+                    <span style={styles.usernameLine}>
+                      @{u.username}
+                      {u.title && <span style={styles.titleBadge}> ✦ {u.title}</span>}
+                    </span>
                     {' '}· {u.follower_count} followers
                   </span>
                 </div>
@@ -132,7 +134,8 @@ const styles = {
     display: 'flex', flexDirection: 'column', gap: '3px',
     flex: 1, cursor: 'pointer', minWidth: 0,
   },
-  displayName: { fontSize: '15px', color: 'var(--accent)' },
+  displayName: { fontSize: '15px' },
+  usernameLine: { color: 'var(--accent)' },
   titleBadge: { color: 'var(--title, #00e8c8)' },
   followBtn: {
     color: 'var(--accent)', cursor: 'pointer', fontSize: '13px',
