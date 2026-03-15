@@ -47,6 +47,10 @@ def _post_dict(post: Post) -> dict:
     }
 
 
+def _normalize_tags(tags: str) -> str:
+    return ','.join(t.strip() for t in tags.split(',') if t.strip())
+
+
 def _make_thumbnail(image_bytes: bytes, save_path: str):
     img = Image.open(io.BytesIO(image_bytes))
     img.thumbnail((800, 800), Image.LANCZOS)
@@ -148,7 +152,7 @@ async def create_post(
         music_song=music_song.strip() if music_song else None,
         music_artist=music_artist.strip() if music_artist else None,
         music_album=music_album.strip() if music_album else None,
-        tags=tags.strip() if tags else None,
+        tags=_normalize_tags(tags) if tags else None,
         parent_post_id=parent_post_id,
         quoted_post_id=quoted_post_id,
         show_in_feed=show_in_feed if is_reply else True,
@@ -269,7 +273,7 @@ def update_post(
     if music_album is not None:
         post.music_album = music_album.strip() or None
     if tags is not None:
-        post.tags = tags.strip() or None
+        post.tags = _normalize_tags(tags) or None
 
     post.is_edited = True
     post.updated_at = datetime.utcnow()
