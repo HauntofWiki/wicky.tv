@@ -127,7 +127,7 @@ export default function Settings() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="wicky.tv enjoyer"
-              maxLength={100}
+              maxLength={64}
             />
             <span style={styles.titlePreview}>
               <span style={styles.previewUsername}>@{user?.username}</span>

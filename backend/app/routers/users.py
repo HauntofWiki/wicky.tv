@@ -67,7 +67,7 @@ def update_profile(
             raise HTTPException(400, "Display name too long (max 100 chars)")
         user.display_name = req.display_name.strip() or None
     if req.title is not None:
-        user.title = req.title.strip()[:100] or None
+        user.title = req.title.strip()[:64] or None
     if req.bio is not None:
         user.bio = req.bio or None
     db.commit()

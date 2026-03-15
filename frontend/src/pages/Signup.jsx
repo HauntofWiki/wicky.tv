@@ -61,6 +61,7 @@ export default function Signup() {
                 value={form[name]}
                 onChange={handleChange}
                 required
+                maxLength={name === 'username' ? 32 : undefined}
               />
             </div>
           ))}

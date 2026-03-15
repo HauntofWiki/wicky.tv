@@ -61,7 +61,13 @@ def _migrate():
             "ALTER TABLE posts ADD COLUMN IF NOT EXISTS show_in_feed BOOLEAN NOT NULL DEFAULT FALSE"
         ))
         db.execute(text(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS title VARCHAR(100)"
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS title VARCHAR(64)"
+        ))
+        db.execute(text(
+            "UPDATE users SET title = LEFT(title, 64) WHERE title IS NOT NULL AND length(title) > 64"
+        ))
+        db.execute(text(
+            "ALTER TABLE users ALTER COLUMN title TYPE VARCHAR(64)"
         ))
         db.commit()
     except Exception:

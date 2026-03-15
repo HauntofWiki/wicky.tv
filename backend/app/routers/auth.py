@@ -48,8 +48,8 @@ def _set_session_cookie(response: Response, session_id: str):
 
 @router.post("/signup")
 def signup(req: SignupRequest, response: Response, db: Session = Depends(get_db)):
-    if not re.match(r"^[a-z0-9_]{2,30}$", req.username):
-        raise HTTPException(400, "Username must be 2–30 lowercase letters, numbers, or underscores")
+    if not re.match(r"^[a-z0-9_]{2,32}$", req.username):
+        raise HTTPException(400, "Username must be 2–32 lowercase letters, numbers, or underscores")
     if db.query(User).filter(User.username == req.username).first():
         raise HTTPException(400, "Username taken")
     if db.query(User).filter(User.email == req.email).first():
