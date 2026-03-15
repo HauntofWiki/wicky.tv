@@ -132,7 +132,7 @@ const styles = {
     display: 'flex', flexDirection: 'column', gap: '3px',
     flex: 1, cursor: 'pointer', minWidth: 0,
   },
-  displayName: { fontSize: '15px' },
+  displayName: { fontSize: '15px', color: 'var(--accent)' },
   titleBadge: { color: 'var(--title, #00e8c8)' },
   followBtn: {
     color: 'var(--accent)', cursor: 'pointer', fontSize: '13px',
