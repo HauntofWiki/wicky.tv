@@ -14,6 +14,7 @@ export default function Settings() {
   const [displayName, setDisplayName] = useState('')
   const [title, setTitle] = useState('')
   const [bio, setBio] = useState('')
+  const [isPublic, setIsPublic] = useState(false)
   const [preview, setPreview] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -30,6 +31,7 @@ export default function Settings() {
       setDisplayName(user.display_name || '')
       setTitle(user.title || '')
       setBio(user.bio || '')
+      setIsPublic(user.is_public || false)
     }
   }, [user])
 
@@ -39,8 +41,8 @@ export default function Settings() {
     setError('')
     setSuccess('')
     try {
-      const updated = await updateProfile(displayName.trim() || null, title.trim() || null, bio || null)
-      setUser((prev) => ({ ...prev, display_name: updated.display_name, title: updated.title, bio: updated.bio }))
+      const updated = await updateProfile(displayName.trim() || null, title.trim() || null, bio || null, isPublic)
+      setUser((prev) => ({ ...prev, display_name: updated.display_name, title: updated.title, bio: updated.bio, is_public: updated.is_public }))
       setSuccess('Profile saved.')
     } catch (err) {
       setError(err.message)
@@ -173,6 +175,21 @@ export default function Settings() {
                 rows={5}
               />
             )}
+          </section>
+
+          <section style={styles.section}>
+            <label style={styles.checkRow}>
+              <input
+                type="checkbox"
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+                style={{ width: 'auto', flexShrink: 0 }}
+              />
+              <span>
+                <span>show on public feed</span>
+                <span style={styles.checkHint}> — your posts appear on the landing page</span>
+              </span>
+            </label>
           </section>
 
           {error && <p className="error">{error}</p>}
@@ -315,6 +332,13 @@ const styles = {
   },
   muted: {
     color: 'var(--text-muted)',
+  },
+  checkRow: {
+    display: 'flex', alignItems: 'center', gap: '10px',
+    cursor: 'pointer', fontSize: '13px', alignSelf: 'flex-start',
+  },
+  checkHint: {
+    color: 'var(--text-muted)', fontSize: '12px',
   },
   titlePreview: {
     fontSize: '14px',

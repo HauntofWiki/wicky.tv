@@ -48,6 +48,9 @@ export default function Login() {
 
   return (
     <div style={styles.page}>
+      <div style={styles.topLeft}>
+        <span style={styles.logo} onClick={() => navigate('/')}>wicky.tv</span>
+      </div>
       <div style={styles.box}>
         <h1 style={styles.title}>wicky.tv</h1>
         <form onSubmit={handleSubmit} style={styles.form}>
@@ -119,6 +122,17 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  topLeft: {
+    position: 'absolute',
+    top: '16px',
+    left: '24px',
+  },
+  logo: {
+    color: 'var(--accent)',
+    fontSize: '18px',
+    cursor: 'pointer',
   },
   box: {
     width: '100%',

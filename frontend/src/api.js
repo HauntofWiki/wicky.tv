@@ -36,11 +36,18 @@ export const listInvites = () => request('/admin/invites')
 
 export const getProfile = (username) => request(`/users/${username}`)
 
-export const updateProfile = (display_name, title, bio) =>
+export const updateProfile = (display_name, title, bio, is_public) =>
   request('/users/me', {
     method: 'PUT',
-    body: JSON.stringify({ display_name, title, bio }),
+    body: JSON.stringify({ display_name, title, bio, is_public }),
   })
+
+export const getPublicFeed = (limit = 50, offset = 0) =>
+  request(`/posts/public-feed?limit=${limit}&offset=${offset}`)
+
+export const pinPost = (id) => request(`/posts/${id}/pin`, { method: 'POST' })
+
+export const unpinPost = (id) => request(`/posts/${id}/pin`, { method: 'DELETE' })
 
 export const getFeed = () => request('/posts/feed')
 
@@ -116,6 +123,10 @@ export const changePassword = (current_password, new_password) =>
   })
 
 export const deletePost = (id) => request(`/posts/${id}`, { method: 'DELETE' })
+
+export const getNotifications = () => request('/notifications')
+
+export const markNotificationsRead = () => request('/notifications/read', { method: 'POST' })
 
 export const uploadAvatar = (file) => {
   const form = new FormData()

@@ -19,6 +19,7 @@ class User(Base):
     bio = Column(Text)
     profile_picture = Column(String(255))
     is_admin = Column(Boolean, default=False, nullable=False)
+    is_public = Column(Boolean, default=False, nullable=False)
     invite_code_used = Column(String(64), ForeignKey("invite_codes.code"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -49,6 +50,7 @@ class Post(Base):
     parent_post_id = Column(Integer, ForeignKey("posts.id"), nullable=True)
     quoted_post_id = Column(Integer, ForeignKey("posts.id"), nullable=True)
     show_in_feed = Column(Boolean, default=False, nullable=False)
+    is_pinned = Column(Boolean, default=False, nullable=False)
 
     user = relationship("User", back_populates="posts")
 
@@ -100,4 +102,17 @@ class Block(Base):
 
     blocker_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     blocked_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    actor_username = Column(String(50), nullable=False)
+    type = Column(String(20), nullable=False)  # 'reply' or 'quote'
+    post_id = Column(Integer, ForeignKey("posts.id"), nullable=True)
+    parent_post_id = Column(Integer, ForeignKey("posts.id"), nullable=True)
+    is_read = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)

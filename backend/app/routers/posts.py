@@ -1,5 +1,6 @@
 import io
 import os
+import subprocess
 import uuid
 from datetime import datetime
 from typing import Optional
@@ -10,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import get_current_user
 from ..database import get_db
-from ..models import Block, Follow, Post, User
+from ..models import Block, Follow, Notification, Post, User
 
 router = APIRouter(prefix="/api/posts", tags=["posts"])
 
@@ -39,6 +40,7 @@ def _post_dict(post: Post) -> dict:
         "parent_post_id": post.parent_post_id,
         "quoted_post_id": post.quoted_post_id,
         "show_in_feed": post.show_in_feed,
+        "is_pinned": post.is_pinned,
         "user": {
             "username": post.user.username,
             "display_name": post.user.display_name,
@@ -57,6 +59,14 @@ def _make_thumbnail(image_bytes: bytes, save_path: str):
     img.thumbnail((800, 800), Image.LANCZOS)
     fmt = img.format or "JPEG"
     img.save(save_path, format=fmt)
+
+
+def _make_video_thumbnail(video_path: str, save_path: str):
+    subprocess.run(
+        ["ffmpeg", "-y", "-ss", "1", "-i", video_path, "-frames:v", "1", "-q:v", "2", save_path],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
 
 
 @router.post("")
@@ -142,6 +152,13 @@ async def create_post(
             thumb_filename = f"thumb_{filename}"
             _make_thumbnail(contents, os.path.join(thumbs_dir, thumb_filename))
             thumbnail_path = f"thumbnails/{thumb_filename}"
+        elif media_type == "video":
+            thumb_filename = f"thumb_{filename.rsplit('.', 1)[0]}.jpg"
+            _make_video_thumbnail(
+                os.path.join(save_dir, filename),
+                os.path.join(thumbs_dir, thumb_filename),
+            )
+            thumbnail_path = f"thumbnails/{thumb_filename}"
 
     post = Post(
         user_id=current_user.id,
@@ -161,7 +178,46 @@ async def create_post(
     db.add(post)
     db.commit()
     db.refresh(post)
+
+    # Notify parent post owner on reply
+    if is_reply and parent.user_id != current_user.id:
+        db.add(Notification(
+            user_id=parent.user_id,
+            actor_username=current_user.username,
+            type="reply",
+            post_id=post.id,
+            parent_post_id=parent.id,
+        ))
+
+    # Notify quoted post owner
+    if quoted_post_id and quoted.user_id != current_user.id:
+        db.add(Notification(
+            user_id=quoted.user_id,
+            actor_username=current_user.username,
+            type="quote",
+            post_id=post.id,
+            parent_post_id=quoted.id,
+        ))
+
+    db.commit()
     return _post_dict(post)
+
+
+@router.get("/public-feed")
+def public_feed(limit: int = 50, offset: int = 0, db: Session = Depends(get_db)):
+    pinned = db.query(Post).filter(Post.is_pinned == True, Post.parent_post_id == None).first()
+    public_ids = [u.id for u in db.query(User).filter(User.is_public == True).all()]
+    q = db.query(Post).filter(Post.parent_post_id == None)
+    if public_ids:
+        q = q.filter(Post.user_id.in_(public_ids))
+    else:
+        q = q.filter(False)
+    posts = q.order_by(Post.created_at.desc()).offset(offset).limit(limit).all()
+    result = []
+    if pinned and offset == 0:
+        result.append(_post_dict(pinned))
+    result.extend([_post_dict(p) for p in posts if not p.is_pinned])
+    return result
 
 
 @router.get("/tags")
@@ -328,3 +384,30 @@ def delete_post(
     db.delete(post)
     db.commit()
     return {"ok": True}
+
+
+@router.post("/{post_id}/pin")
+def pin_post(post_id: int, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    if not current_user.is_admin:
+        raise HTTPException(403, "Admin only")
+    db.query(Post).filter(Post.is_pinned == True).update({"is_pinned": False})
+    post = db.get(Post, post_id)
+    if not post:
+        raise HTTPException(404, "Post not found")
+    post.is_pinned = True
+    db.commit()
+    db.refresh(post)
+    return _post_dict(post)
+
+
+@router.delete("/{post_id}/pin")
+def unpin_post(post_id: int, current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+    if not current_user.is_admin:
+        raise HTTPException(403, "Admin only")
+    post = db.get(Post, post_id)
+    if not post:
+        raise HTTPException(404, "Post not found")
+    post.is_pinned = False
+    db.commit()
+    db.refresh(post)
+    return _post_dict(post)

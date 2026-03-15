@@ -1,12 +1,21 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { logout } from '../api'
+import { getNotifications, logout } from '../api'
 import { useAuth } from '../App'
 
 export default function NavHeader() {
   const { user, setUser } = useAuth()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [unread, setUnread] = useState(0)
+
+  useEffect(() => {
+    if (!user) return
+    const poll = () => getNotifications().then(d => setUnread(d.unread)).catch(() => {})
+    poll()
+    const id = setInterval(poll, 30000)
+    return () => clearInterval(id)
+  }, [user])
 
   async function handleLogout() {
     await logout()
@@ -19,7 +28,7 @@ export default function NavHeader() {
   return (
     <>
       <div style={styles.header}>
-        <span style={styles.logo} onClick={() => go('/home')}>wicky.tv</span>
+        <span style={styles.logo} onClick={() => go(user ? '/home' : '/')}>wicky.tv</span>
         {user ? (
           <>
             <div className="nav-full" style={styles.nav}>
@@ -30,6 +39,9 @@ export default function NavHeader() {
               <span style={styles.navLink} onClick={() => go('/people')}>people</span>
               <span style={styles.navLink} onClick={() => go('/tags')}>tags</span>
               <span style={styles.navLink} onClick={() => go('/settings')}>settings</span>
+              <span style={styles.navLink} onClick={() => go('/notifications')}>
+                notifications{unread > 0 && <span style={styles.badge}>{unread}</span>}
+              </span>
               <span style={styles.navLink} onClick={() => go(`/@${user.username}`)}>@{user.username}</span>
               <span style={styles.navLink} onClick={handleLogout}>log out</span>
             </div>
@@ -53,6 +65,9 @@ export default function NavHeader() {
           <span className="mobile-nav-menu-item" onClick={() => go('/people')}>people</span>
           <span className="mobile-nav-menu-item" onClick={() => go('/tags')}>tags</span>
           <span className="mobile-nav-menu-item" onClick={() => go('/settings')}>settings</span>
+          <span className="mobile-nav-menu-item" onClick={() => go('/notifications')}>
+            notifications{unread > 0 && <span style={styles.badge}>{unread}</span>}
+          </span>
           <span className="mobile-nav-menu-item" onClick={() => go(`/@${user.username}`)}>@{user.username}</span>
           <span className="mobile-nav-menu-item" onClick={handleLogout}>log out</span>
         </div>
@@ -81,5 +96,16 @@ const styles = {
   navLink: {
     color: 'var(--text-muted)',
     cursor: 'pointer',
+  },
+  badge: {
+    display: 'inline-block',
+    background: 'var(--accent)',
+    color: '#000',
+    borderRadius: '10px',
+    fontSize: '11px',
+    fontWeight: 'bold',
+    padding: '0 5px',
+    marginLeft: '5px',
+    lineHeight: '16px',
   },
 }

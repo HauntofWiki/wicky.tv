@@ -1,8 +1,8 @@
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { createPost, deletePost, getPost, listReplies, updatePost } from '../api'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { createPost, deletePost, getPost, listReplies, pinPost, unpinPost, updatePost } from '../api'
 import { useAuth } from '../App'
 import NavHeader from '../components/NavHeader'
 
@@ -184,7 +184,7 @@ function ComposeModal({ postId, quotedPost, editingPost, onClose, onPosted, onEd
 
 // ── Reply card (same shape as the post above) ────────────────────────────────
 
-function ReplyCard({ reply, replyById, user, onQuote, onEdit, onDelete, navigate }) {
+function ReplyCard({ reply, replyById, user, onQuote, onEdit, onDelete, navigate, highlight }) {
   const isOwn = user?.username === reply.user.username
   const bodyHtml = reply.description
     ? DOMPurify.sanitize(marked.parse(reply.description))
@@ -193,7 +193,7 @@ function ReplyCard({ reply, replyById, user, onQuote, onEdit, onDelete, navigate
   const hasMusic = reply.music_song || reply.music_artist || reply.music_album
 
   return (
-    <div style={styles.reply}>
+    <div id={`reply-${reply.id}`} style={{ ...styles.reply, ...(highlight ? styles.replyHighlight : {}) }}>
       {quoted && (
         <div style={styles.quotedBlock}>
           <span style={styles.quotedAuthor}>@{quoted.user.username}</span>
@@ -262,6 +262,8 @@ export default function Post() {
   const { id } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const highlightId = searchParams.get('highlight')
   const [post, setPost] = useState(null)
   const [error, setError] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -273,8 +275,23 @@ export default function Post() {
 
   useEffect(() => {
     getPost(id).then(setPost).catch(() => setError('Post not found'))
-    listReplies(id).then(setReplies).catch(() => {})
+    listReplies(id).then(replies => {
+      setReplies(replies)
+      if (highlightId) {
+        setTimeout(() => {
+          const el = document.getElementById(`reply-${highlightId}`)
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }, 100)
+      }
+    }).catch(() => {})
   }, [id])
+
+  async function handlePin() {
+    try {
+      const updated = post.is_pinned ? await unpinPost(id) : await pinPost(id)
+      setPost(updated)
+    } catch (err) { setError(err.message) }
+  }
 
   async function handleDeletePost() {
     try {
@@ -334,16 +351,23 @@ export default function Post() {
         <div style={styles.meta}>
           <div style={styles.titleRow}>
             <h1 style={styles.title}>{post.title}</h1>
-            {isOwn && (
+            {(isOwn || user?.is_admin) && (
               <div style={styles.actions}>
-                <span style={styles.actionLink} onClick={() => navigate(`/post/${id}/edit`)}>edit</span>
-                {confirmDelete ? (
-                  <>
-                    <span style={styles.actionDanger} onClick={handleDeletePost}>confirm delete</span>
-                    <span style={styles.actionLink} onClick={() => setConfirmDelete(false)}>cancel</span>
-                  </>
-                ) : (
-                  <span style={styles.actionDanger} onClick={() => setConfirmDelete(true)}>delete</span>
+                {isOwn && <span style={styles.actionLink} onClick={() => navigate(`/post/${id}/edit`)}>edit</span>}
+                {user?.is_admin && !post.parent_post_id && (
+                  <span style={styles.actionLink} onClick={handlePin}>
+                    {post.is_pinned ? 'unpin' : 'pin'}
+                  </span>
+                )}
+                {(isOwn || user?.is_admin) && (
+                  confirmDelete ? (
+                    <>
+                      <span style={styles.actionDanger} onClick={handleDeletePost}>confirm delete</span>
+                      <span style={styles.actionLink} onClick={() => setConfirmDelete(false)}>cancel</span>
+                    </>
+                  ) : (
+                    <span style={styles.actionDanger} onClick={() => setConfirmDelete(true)}>delete</span>
+                  )
                 )}
               </div>
             )}
@@ -412,6 +436,7 @@ export default function Post() {
               onEdit={openEdit}
               onDelete={handleDeleteReply}
               navigate={navigate}
+              highlight={highlightId && String(r.id) === highlightId}
             />
           ))}
         </div>
@@ -482,6 +507,12 @@ const styles = {
   reply: {
     display: 'flex', flexDirection: 'column', gap: '8px',
     paddingBottom: '20px', borderBottom: '1px solid var(--border)',
+  },
+  replyHighlight: {
+    background: 'var(--surface)',
+    borderLeft: '2px solid var(--accent)',
+    paddingLeft: '12px',
+    borderRadius: '2px',
   },
   replyMeta: { display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' },
   replyAuthor: { color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' },

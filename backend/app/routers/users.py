@@ -26,6 +26,7 @@ def _user_public(user: User) -> dict:
         "title": user.title,
         "bio": user.bio,
         "profile_picture": user.profile_picture,
+        "is_public": user.is_public,
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }
 
@@ -34,6 +35,7 @@ class UpdateProfileRequest(BaseModel):
     display_name: str | None = None
     title: str | None = None
     bio: str | None = None
+    is_public: bool | None = None
 
 
 @router.get("")
@@ -70,6 +72,8 @@ def update_profile(
         user.title = req.title.strip()[:64] or None
     if req.bio is not None:
         user.bio = req.bio or None
+    if req.is_public is not None:
+        user.is_public = req.is_public
     db.commit()
     return _user_public(user)
 

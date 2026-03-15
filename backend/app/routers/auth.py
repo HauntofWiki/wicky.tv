@@ -120,4 +120,5 @@ def me(user: User = Depends(get_current_user)):
         "bio": user.bio,
         "profile_picture": user.profile_picture,
         "is_admin": user.is_admin,
+        "is_public": user.is_public,
     }
