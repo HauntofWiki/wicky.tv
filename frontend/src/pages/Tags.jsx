@@ -23,6 +23,7 @@ export default function Tags() {
       <div style={styles.header}>
         <span style={styles.logo} onClick={() => navigate('/home')}>wicky.tv</span>
         <div style={styles.nav}>
+          <span style={styles.navLink} onClick={() => navigate('/tags')}>all tags</span>
           {user ? (
             <span style={styles.navLink} onClick={() => navigate('/home')}>home</span>
           ) : (
@@ -31,7 +32,7 @@ export default function Tags() {
         </div>
       </div>
 
-      <div style={styles.body}>
+      <div className="page-body" style={styles.body}>
         <p style={styles.tagLabel}>{tag}</p>
 
         {loading ? (
@@ -90,7 +91,7 @@ const styles = {
   nav: { display: 'flex', gap: '20px' },
   navLink: { color: 'var(--text-muted)', cursor: 'pointer' },
   body: {
-    padding: '40px 24px', maxWidth: '600px', width: '100%',
+    maxWidth: '600px', width: '100%',
     margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '8px',
   },
   tagLabel: {

@@ -12,6 +12,7 @@ import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import Signup from './pages/Signup'
 import Tags from './pages/Tags'
+import TagsIndex from './pages/TagsIndex'
 
 const AuthContext = createContext(null)
 
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="/post/:id" element={<Post />} />
           <Route path="/post/:id/edit" element={<ProtectedRoute><EditPost /></ProtectedRoute>} />
           <Route path="/admin/invites" element={<AdminRoute><AdminInvites /></AdminRoute>} />
+          <Route path="/tags" element={<TagsIndex />} />
           <Route path="/tags/:tag" element={<Tags />} />
           <Route path="/:username" element={<Profile />} />
           <Route path="/" element={<Navigate to="/home" replace />} />

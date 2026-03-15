@@ -163,6 +163,23 @@ async def create_post(
     return _post_dict(post)
 
 
+@router.get("/tags")
+def list_tags(db: Session = Depends(get_db)):
+    from sqlalchemy import text
+    rows = db.execute(text("""
+        SELECT tag, COUNT(*) AS count
+        FROM (
+            SELECT unnest(string_to_array(lower(tags), ',')) AS tag
+            FROM posts
+            WHERE tags IS NOT NULL AND parent_post_id IS NULL
+        ) t
+        WHERE tag != ''
+        GROUP BY tag
+        ORDER BY count DESC, tag ASC
+    """)).fetchall()
+    return [{"tag": row[0], "count": row[1]} for row in rows]
+
+
 @router.get("/feed")
 def get_feed(
     limit: int = 50,
