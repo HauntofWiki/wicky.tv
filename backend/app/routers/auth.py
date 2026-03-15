@@ -116,6 +116,7 @@ def me(user: User = Depends(get_current_user)):
         "id": user.id,
         "username": user.username,
         "display_name": user.display_name,
+        "title": user.title,
         "bio": user.bio,
         "profile_picture": user.profile_picture,
         "is_admin": user.is_admin,
