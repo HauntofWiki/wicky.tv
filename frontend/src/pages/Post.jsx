@@ -20,6 +20,7 @@ function ComposeModal({ postId, quotedPost, editingPost, onClose, onPosted, onEd
   const [showMusic, setShowMusic] = useState(
     !!(editingPost?.music_song || editingPost?.music_artist || editingPost?.music_album)
   )
+  const [postToFeed, setPostToFeed] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const textareaRef = useRef(null)
@@ -60,6 +61,7 @@ function ComposeModal({ postId, quotedPost, editingPost, onClose, onPosted, onEd
         form.append('parent_post_id', postId)
         if (quotedPost) form.append('quoted_post_id', quotedPost.id)
         if (file) form.append('media', file)
+        if (postToFeed) form.append('show_in_feed', 'true')
         result = await createPost(form)
         if (preview) URL.revokeObjectURL(preview.url)
         onPosted(result)
@@ -154,6 +156,17 @@ function ComposeModal({ postId, quotedPost, editingPost, onClose, onPosted, onEd
           {error && <span style={styles.errorText}>{error}</span>}
 
           <div style={styles.composeActions}>
+            {!isEdit && (
+              <label style={styles.feedToggle}>
+                <input
+                  type="checkbox"
+                  checked={postToFeed}
+                  onChange={(e) => setPostToFeed(e.target.checked)}
+                  style={{ marginRight: '6px' }}
+                />
+                post to feed
+              </label>
+            )}
             <button
               type="submit"
               style={{ ...styles.btn, marginLeft: 'auto', opacity: (!canSubmit || submitting) ? 0.5 : 1 }}
@@ -538,6 +551,7 @@ const styles = {
     color: 'inherit', fontFamily: 'inherit', fontSize: '13px', padding: '7px 10px',
   },
   composeActions: { display: 'flex', alignItems: 'center' },
+  feedToggle: { color: 'var(--text-muted)', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center' },
   btn: {
     background: 'var(--accent)', color: '#000', border: 'none', borderRadius: '4px',
     padding: '6px 20px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold',

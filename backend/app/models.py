@@ -47,6 +47,7 @@ class Post(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     parent_post_id = Column(Integer, ForeignKey("posts.id"), nullable=True)
     quoted_post_id = Column(Integer, ForeignKey("posts.id"), nullable=True)
+    show_in_feed = Column(Boolean, default=False, nullable=False)
 
     user = relationship("User", back_populates="posts")
 

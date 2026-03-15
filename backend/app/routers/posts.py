@@ -38,6 +38,7 @@ def _post_dict(post: Post) -> dict:
         "updated_at": post.updated_at.isoformat() if post.updated_at else None,
         "parent_post_id": post.parent_post_id,
         "quoted_post_id": post.quoted_post_id,
+        "show_in_feed": post.show_in_feed,
         "user": {
             "username": post.user.username,
             "display_name": post.user.display_name,
@@ -63,6 +64,7 @@ async def create_post(
     tags: Optional[str] = Form(None),
     parent_post_id: Optional[int] = Form(None),
     quoted_post_id: Optional[int] = Form(None),
+    show_in_feed: bool = Form(False),
     media: Optional[UploadFile] = File(None),
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -149,6 +151,7 @@ async def create_post(
         tags=tags.strip() if tags else None,
         parent_post_id=parent_post_id,
         quoted_post_id=quoted_post_id,
+        show_in_feed=show_in_feed if is_reply else True,
     )
     db.add(post)
     db.commit()
@@ -168,15 +171,31 @@ def get_feed(
     ]
     if not followed_ids:
         return []
+    from sqlalchemy import or_
     posts = (
         db.query(Post)
-        .filter(Post.user_id.in_(followed_ids), Post.parent_post_id == None)
+        .filter(
+            Post.user_id.in_(followed_ids),
+            or_(Post.parent_post_id == None, Post.show_in_feed == True),
+        )
         .order_by(Post.created_at.desc())
         .offset(offset)
         .limit(limit)
         .all()
     )
-    return [_post_dict(p) for p in posts]
+    result = []
+    for p in posts:
+        d = _post_dict(p)
+        if p.parent_post_id:
+            parent = db.get(Post, p.parent_post_id)
+            if parent:
+                d["parent_preview"] = {
+                    "id": parent.id,
+                    "title": parent.title,
+                    "user": {"username": parent.user.username},
+                }
+        result.append(d)
+    return result
 
 
 @router.get("")

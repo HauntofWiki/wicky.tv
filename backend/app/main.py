@@ -51,6 +51,9 @@ def _migrate():
         db.execute(text("ALTER TABLE posts ALTER COLUMN media_path DROP NOT NULL"))
         db.execute(text("ALTER TABLE posts ALTER COLUMN media_type DROP NOT NULL"))
         db.execute(text("DROP TABLE IF EXISTS comments"))
+        db.execute(text(
+            "ALTER TABLE posts ADD COLUMN IF NOT EXISTS show_in_feed BOOLEAN NOT NULL DEFAULT FALSE"
+        ))
         db.commit()
     except Exception:
         db.rollback()

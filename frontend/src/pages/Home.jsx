@@ -1,10 +1,20 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { logout } from '../api'
+import { getFeed, logout } from '../api'
 import { useAuth } from '../App'
 
 export default function Home() {
   const { user, setUser } = useAuth()
   const navigate = useNavigate()
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getFeed()
+      .then(setPosts)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
 
   async function handleLogout() {
     await logout()
@@ -22,6 +32,12 @@ export default function Home() {
               invites
             </span>
           )}
+          <span style={styles.navLink} onClick={() => navigate('/new')}>
+            new post
+          </span>
+          <span style={styles.navLink} onClick={() => navigate('/people')}>
+            people
+          </span>
           <span style={styles.navLink} onClick={() => navigate('/settings')}>
             settings
           </span>
@@ -33,10 +49,72 @@ export default function Home() {
           </span>
         </div>
       </div>
+
       <div style={styles.body}>
         <p style={styles.welcome}>hey, {user?.display_name || user?.username}.</p>
         <p style={styles.feedLabel}>morioh</p>
-        <p style={styles.muted}>posts coming in phase 3.</p>
+
+        {loading ? (
+          <p style={styles.muted}>loading...</p>
+        ) : posts.length === 0 ? (
+          <p style={styles.muted}>nothing here yet. invite some people.</p>
+        ) : (
+          <div style={styles.feed}>
+            {posts.map(post => {
+              const isReply = !!post.parent_post_id
+              const threadId = isReply ? post.parent_post_id : post.id
+              const displayTitle = post.title
+                || (post.description ? post.description.slice(0, 60) + (post.description.length > 60 ? '…' : '') : null)
+                || '(reply)'
+              return (
+                <div
+                  key={post.id}
+                  style={styles.card}
+                  onClick={() => navigate(`/post/${threadId}`)}
+                >
+                  {post.media_type === 'video' ? (
+                    <div style={styles.videoThumb}>
+                      <span style={styles.playIcon}>▶</span>
+                    </div>
+                  ) : post.media_path ? (
+                    <img
+                      src={`/uploads/${post.thumbnail_path || post.media_path}`}
+                      alt={displayTitle}
+                      style={styles.cardImg}
+                    />
+                  ) : (
+                    <div style={styles.textThumb}>↩</div>
+                  )}
+                  <div style={styles.cardMeta}>
+                    {isReply && post.parent_preview && (
+                      <span style={styles.replyContext}>
+                        ↩ in{' '}
+                        <span
+                          style={styles.replyContextLink}
+                          onClick={e => { e.stopPropagation(); navigate(`/post/${post.parent_preview.id}`) }}
+                        >
+                          {post.parent_preview.title || `@${post.parent_preview.user.username}'s post`}
+                        </span>
+                      </span>
+                    )}
+                    <span style={styles.cardTitle}>{displayTitle}</span>
+                    <span style={styles.cardBy}>
+                      <span
+                        style={styles.cardUsername}
+                        onClick={e => { e.stopPropagation(); navigate(`/@${post.user.username}`) }}
+                      >
+                        @{post.user.username}
+                      </span>
+                      <span style={styles.muted}>
+                        {new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -68,16 +146,17 @@ const styles = {
     cursor: 'pointer',
   },
   body: {
-    padding: '60px 24px',
+    padding: '40px 24px',
+    maxWidth: '600px',
+    width: '100%',
+    margin: '0 auto',
     display: 'flex',
     flexDirection: 'column',
     gap: '8px',
   },
   welcome: {
     fontSize: '22px',
-  },
-  muted: {
-    color: 'var(--text-muted)',
+    margin: 0,
   },
   feedLabel: {
     color: 'var(--accent)',
@@ -85,5 +164,88 @@ const styles = {
     letterSpacing: '0.1em',
     textTransform: 'uppercase',
     marginTop: '4px',
+    marginBottom: '16px',
+  },
+  muted: {
+    color: 'var(--text-muted)',
+    fontSize: '13px',
+  },
+  feed: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+  },
+  card: {
+    display: 'flex',
+    gap: '14px',
+    alignItems: 'center',
+    padding: '10px 0',
+    borderBottom: '1px solid var(--border)',
+    cursor: 'pointer',
+  },
+  cardImg: {
+    width: '72px',
+    height: '72px',
+    objectFit: 'cover',
+    borderRadius: '3px',
+    flexShrink: 0,
+    background: 'var(--surface)',
+  },
+  videoThumb: {
+    width: '72px',
+    height: '72px',
+    flexShrink: 0,
+    background: 'var(--surface)',
+    borderRadius: '3px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playIcon: {
+    color: 'var(--accent)',
+    fontSize: '22px',
+  },
+  cardMeta: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+    flex: 1,
+    minWidth: 0,
+  },
+  cardTitle: {
+    fontSize: '15px',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+    textOverflow: 'ellipsis',
+  },
+  cardBy: {
+    display: 'flex',
+    gap: '10px',
+    alignItems: 'center',
+  },
+  cardUsername: {
+    color: 'var(--accent)',
+    fontSize: '13px',
+    cursor: 'pointer',
+  },
+  textThumb: {
+    width: '72px',
+    height: '72px',
+    flexShrink: 0,
+    background: 'var(--surface)',
+    borderRadius: '3px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'var(--text-muted)',
+    fontSize: '22px',
+  },
+  replyContext: {
+    color: 'var(--text-muted)',
+    fontSize: '11px',
+  },
+  replyContextLink: {
+    color: 'var(--accent)',
+    cursor: 'pointer',
   },
 }
