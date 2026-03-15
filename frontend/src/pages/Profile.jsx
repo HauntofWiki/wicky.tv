@@ -14,6 +14,7 @@ export default function Profile() {
   const [posts, setPosts] = useState([])
   const [error, setError] = useState('')
   const [followLoading, setFollowLoading] = useState(false)
+  const [view, setView] = useState('grid')
 
   useEffect(() => {
     getProfile(username)
@@ -112,9 +113,20 @@ export default function Profile() {
           </div>
         </div>
         <div style={styles.gridSection}>
+          <div style={styles.viewToggleRow}>
+            <span
+              style={view === 'grid' ? styles.toggleActive : styles.toggleOption}
+              onClick={() => setView('grid')}
+            >⊞ grid</span>
+            <span
+              style={view === 'feed' ? styles.toggleActive : styles.toggleOption}
+              onClick={() => setView('feed')}
+            >☰ feed</span>
+          </div>
+
           {posts.length === 0 ? (
             <p style={styles.muted}>no posts yet.</p>
-          ) : (
+          ) : view === 'grid' ? (
             <div style={styles.grid}>
               {posts.map(post => (
                 <div
@@ -134,6 +146,35 @@ export default function Profile() {
                       style={styles.gridImg}
                     />
                   )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={styles.feedList}>
+              {posts.map(post => (
+                <div key={post.id} style={styles.feedCard} onClick={() => navigate(`/post/${post.id}`)}>
+                  {post.media_type === 'video' ? (
+                    <div style={styles.feedThumb}>
+                      <span style={styles.feedPlayIcon}>▶</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={`/uploads/${post.thumbnail_path || post.media_path}`}
+                      alt={post.title}
+                      style={styles.feedThumbImg}
+                    />
+                  )}
+                  <div style={styles.feedMeta}>
+                    <span style={styles.feedTitle}>{post.title}</span>
+                    {post.description && (
+                      <span style={styles.feedDesc}>
+                        {post.description.length > 80 ? post.description.slice(0, 80) + '…' : post.description}
+                      </span>
+                    )}
+                    <span style={styles.muted}>
+                      {new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -282,7 +323,53 @@ const styles = {
   },
   gridSection: {
     borderTop: '1px solid var(--border)',
-    paddingTop: '32px',
+    paddingTop: '24px',
+  },
+  viewToggleRow: {
+    display: 'flex',
+    gap: '6px',
+    marginBottom: '16px',
+  },
+  toggleOption: {
+    padding: '3px 10px', borderRadius: '3px', fontSize: '12px',
+    color: 'var(--text-muted)', cursor: 'pointer',
+    border: '1px solid var(--border)',
+  },
+  toggleActive: {
+    padding: '3px 10px', borderRadius: '3px', fontSize: '12px',
+    color: 'var(--accent)', cursor: 'pointer',
+    border: '1px solid var(--accent)',
+  },
+  feedList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px',
+  },
+  feedCard: {
+    display: 'flex', gap: '14px', alignItems: 'center',
+    padding: '10px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer',
+  },
+  feedThumb: {
+    width: '72px', height: '72px', flexShrink: 0,
+    background: 'var(--surface)', borderRadius: '3px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
+  feedThumbImg: {
+    width: '72px', height: '72px', objectFit: 'cover',
+    borderRadius: '3px', flexShrink: 0, display: 'block',
+  },
+  feedPlayIcon: { color: 'var(--accent)', fontSize: '22px' },
+  feedMeta: {
+    display: 'flex', flexDirection: 'column', gap: '4px',
+    flex: 1, minWidth: 0,
+  },
+  feedTitle: {
+    fontSize: '15px', overflow: 'hidden',
+    whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+  },
+  feedDesc: {
+    color: 'var(--text-muted)', fontSize: '12px',
+    overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
   },
   grid: {
     display: 'grid',
