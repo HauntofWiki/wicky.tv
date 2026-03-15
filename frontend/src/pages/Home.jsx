@@ -112,6 +112,9 @@ export default function Home() {
                       >
                         @{post.user.username}
                       </span>
+                      {post.user.title && (
+                        <span style={styles.titleBadge}>✦ {post.user.title}</span>
+                      )}
                       <span style={styles.muted}>
                         {new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </span>
@@ -249,5 +252,9 @@ const styles = {
   replyContextLink: {
     color: 'var(--accent)',
     cursor: 'pointer',
+  },
+  titleBadge: {
+    color: 'var(--title, #00e8c8)',
+    fontSize: '12px',
   },
 }
