@@ -168,31 +168,9 @@ function ComposeModal({ postId, quotedPost, editingPost, onClose, onPosted, onEd
   )
 }
 
-// ── Lightbox ─────────────────────────────────────────────────────────────────
-
-function Lightbox({ src, onClose }) {
-  useEffect(() => {
-    function onKey(e) { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-
-  return (
-    <div style={styles.lightboxOverlay} onClick={onClose}>
-      <img
-        src={src}
-        style={styles.lightboxImg}
-        onClick={(e) => e.stopPropagation()}
-        alt=""
-      />
-    </div>
-  )
-}
-
 // ── Reply card (same shape as the post above) ────────────────────────────────
 
 function ReplyCard({ reply, replyById, user, onQuote, onEdit, onDelete, navigate }) {
-  const [lightbox, setLightbox] = useState(null)
   const isOwn = user?.username === reply.user.username
   const bodyHtml = reply.description
     ? DOMPurify.sanitize(marked.parse(reply.description))
@@ -218,18 +196,9 @@ function ReplyCard({ reply, replyById, user, onQuote, onEdit, onDelete, navigate
         <div style={styles.replyMediaWrap}>
           {reply.media_type === 'video'
             ? <video src={`/uploads/${reply.media_path}`} controls style={styles.replyMedia} />
-            : (
-              <img
-                src={`/uploads/${reply.media_path}`}
-                alt=""
-                style={styles.replyThumb}
-                onClick={() => setLightbox(`/uploads/${reply.media_path}`)}
-              />
-            )}
+            : <img src={`/uploads/${reply.media_path}`} alt="" style={styles.replyMedia} />}
         </div>
       )}
-
-      {lightbox && <Lightbox src={lightbox} onClose={() => setLightbox(null)} />}
 
       {bodyHtml && (
         <div style={styles.replyBody} dangerouslySetInnerHTML={{ __html: bodyHtml }} />
@@ -510,21 +479,8 @@ const styles = {
   replyMeta: { display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' },
   replyAuthor: { color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' },
   replyBody: { lineHeight: '1.6', fontSize: '14px' },
-  replyMediaWrap: { borderRadius: '4px', overflow: 'hidden', display: 'inline-block' },
+  replyMediaWrap: { borderRadius: '4px', overflow: 'hidden', maxWidth: '500px' },
   replyMedia: { width: '100%', maxHeight: '400px', objectFit: 'contain', display: 'block' },
-  replyThumb: {
-    height: '120px', maxWidth: '180px', objectFit: 'cover',
-    display: 'block', cursor: 'zoom-in', borderRadius: '3px',
-  },
-  lightboxOverlay: {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    zIndex: 200, cursor: 'zoom-out',
-  },
-  lightboxImg: {
-    maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain',
-    borderRadius: '3px', cursor: 'default',
-  },
   quotedBlock: {
     background: 'var(--surface)', borderLeft: '3px solid var(--border)',
     padding: '8px 12px', borderRadius: '3px', fontSize: '13px',
