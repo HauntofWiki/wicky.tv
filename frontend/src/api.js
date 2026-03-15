@@ -52,6 +52,17 @@ export const followUser = (username) =>
 export const unfollowUser = (username) =>
   request(`/users/${username}/follow`, { method: 'DELETE' })
 
+export const requestAccess = (email, message) =>
+  request('/request-access', {
+    method: 'POST',
+    body: JSON.stringify({ email, message }),
+  })
+
+export const listAccessRequests = () => request('/admin/access-requests')
+
+export const dismissAccessRequest = (id) =>
+  request(`/admin/access-requests/${id}`, { method: 'DELETE' })
+
 export const blockUser = (username) =>
   request(`/users/${username}/block`, { method: 'POST' })
 

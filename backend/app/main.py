@@ -8,7 +8,7 @@ from sqlalchemy import text
 from app.auth import hash_password
 from app.database import Base, SessionLocal, engine
 from app.models import User
-from app.routers import admin, auth, blocks, follows, posts, users
+from app.routers import access, admin, auth, blocks, follows, posts, users
 
 app = FastAPI(title="wicky.tv API")
 
@@ -26,6 +26,7 @@ app.include_router(users.router)
 app.include_router(follows.router)
 app.include_router(posts.router)
 app.include_router(blocks.router)
+app.include_router(access.router)
 
 UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "/uploads")
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR, check_dir=False), name="uploads")

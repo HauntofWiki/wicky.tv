@@ -85,6 +85,15 @@ class Session(Base):
     user = relationship("User", back_populates="sessions")
 
 
+class AccessRequest(Base):
+    __tablename__ = "access_requests"
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String(255), nullable=False)
+    message = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Block(Base):
     __tablename__ = "blocks"
 

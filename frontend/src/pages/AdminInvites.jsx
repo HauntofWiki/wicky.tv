@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createInvite, listInvites } from '../api'
+import { createInvite, dismissAccessRequest, listAccessRequests, listInvites } from '../api'
 
 export default function AdminInvites() {
   const navigate = useNavigate()
@@ -9,12 +9,16 @@ export default function AdminInvites() {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState(null)
   const [copied, setCopied] = useState(null)
+  const [requests, setRequests] = useState([])
 
   useEffect(() => {
     listInvites()
       .then(setInvites)
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
+    listAccessRequests()
+      .then(setRequests)
+      .catch(() => {})
   }, [])
 
   async function handleGenerate() {
@@ -34,6 +38,11 @@ export default function AdminInvites() {
     navigator.clipboard.writeText(code)
     setCopied(code)
     setTimeout(() => setCopied(null), 2000)
+  }
+
+  async function handleDismiss(id) {
+    await dismissAccessRequest(id)
+    setRequests(prev => prev.filter(r => r.id !== id))
   }
 
   return (
@@ -89,6 +98,44 @@ export default function AdminInvites() {
               ))}
             </tbody>
           </table>
+        )}
+        {requests.length > 0 && (
+          <div style={styles.requestsSection}>
+            <h3 style={styles.sectionTitle}>
+              access requests
+              <span style={styles.badge}>{requests.length}</span>
+            </h3>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>email</th>
+                  <th style={styles.th}>message</th>
+                  <th style={styles.th}>date</th>
+                  <th style={styles.th}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {requests.map(r => (
+                  <tr key={r.id} style={styles.row}>
+                    <td style={styles.td}>
+                      <span style={styles.code}>{r.email}</span>
+                    </td>
+                    <td style={{ ...styles.td, color: 'var(--text-muted)', fontSize: '13px' }}>
+                      {r.message || '—'}
+                    </td>
+                    <td style={styles.td}>
+                      {new Date(r.created_at).toLocaleDateString()}
+                    </td>
+                    <td style={styles.td}>
+                      <span style={styles.copyBtn} onClick={() => handleDismiss(r.id)}>
+                        dismiss
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
@@ -149,6 +196,24 @@ const styles = {
   copyBtn: {
     color: 'var(--text-muted)',
     cursor: 'pointer',
+    fontSize: '12px',
+  },
+  requestsSection: {
+    marginTop: '48px',
+  },
+  sectionTitle: {
+    fontWeight: 'normal',
+    fontSize: '16px',
+    marginBottom: '16px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  badge: {
+    background: 'var(--accent)',
+    color: '#000',
+    borderRadius: '10px',
+    padding: '1px 8px',
     fontSize: '12px',
   },
 }

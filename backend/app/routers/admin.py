@@ -8,19 +8,19 @@ from sqlalchemy.orm import Session
 
 from app.auth import require_admin
 from app.database import get_db
-from app.models import InviteCode, User
+from app.models import AccessRequest, InviteCode, User
 
 router = APIRouter(prefix="/api/admin")
 
 
-class InviteRequest(BaseModel):
+class CreateInviteBody(BaseModel):
     max_uses: int = 1
     expires_at: Optional[datetime] = None
 
 
 @router.post("/invites")
 def create_invite(
-    req: InviteRequest = InviteRequest(),
+    req: CreateInviteBody = CreateInviteBody(),
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
@@ -52,3 +52,33 @@ def list_invites(
         }
         for i in invites
     ]
+
+
+@router.get("/access-requests")
+def list_access_requests(
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    reqs = db.query(AccessRequest).order_by(AccessRequest.created_at.desc()).all()
+    return [
+        {
+            "id": r.id,
+            "email": r.email,
+            "message": r.message,
+            "created_at": r.created_at,
+        }
+        for r in reqs
+    ]
+
+
+@router.delete("/access-requests/{req_id}")
+def dismiss_access_request(
+    req_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    req = db.get(AccessRequest, req_id)
+    if req:
+        db.delete(req)
+        db.commit()
+    return {"ok": True}

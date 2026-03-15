@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { login } from '../api'
+import { login, requestAccess } from '../api'
 import { useAuth } from '../App'
 
 export default function Login() {
@@ -11,6 +11,12 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
+
+  const [requesting, setRequesting] = useState(false)
+  const [reqEmail, setReqEmail] = useState('')
+  const [reqMessage, setReqMessage] = useState('')
+  const [reqSent, setReqSent] = useState(false)
+  const [reqLoading, setReqLoading] = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -24,6 +30,19 @@ export default function Login() {
       setError(err.message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleRequest(e) {
+    e.preventDefault()
+    setReqLoading(true)
+    try {
+      await requestAccess(reqEmail, reqMessage || undefined)
+      setReqSent(true)
+    } catch {
+      setReqSent(true) // show same message regardless
+    } finally {
+      setReqLoading(false)
     }
   }
 
@@ -58,6 +77,37 @@ export default function Login() {
         <p style={styles.footer}>
           have an invite? <Link to="/signup">sign up</Link>
         </p>
+        <p style={styles.footer}>
+          no invite?{' '}
+          <span style={styles.requestLink} onClick={() => setRequesting(r => !r)}>
+            request access
+          </span>
+        </p>
+        {requesting && (
+          reqSent ? (
+            <p style={{ ...styles.footer, marginTop: '12px' }}>request sent.</p>
+          ) : (
+            <form onSubmit={handleRequest} style={styles.requestForm}>
+              <input
+                type="email"
+                placeholder="your email"
+                value={reqEmail}
+                onChange={e => setReqEmail(e.target.value)}
+                required
+              />
+              <textarea
+                placeholder="anything you want to say (optional)"
+                value={reqMessage}
+                onChange={e => setReqMessage(e.target.value)}
+                rows={2}
+                style={styles.requestTextarea}
+              />
+              <button type="submit" disabled={reqLoading}>
+                {reqLoading ? 'sending…' : 'send request'}
+              </button>
+            </form>
+          )
+        )}
       </div>
     </div>
   )
@@ -97,5 +147,21 @@ const styles = {
     marginTop: '20px',
     color: 'var(--text-muted)',
     textAlign: 'center',
+    fontSize: '13px',
+  },
+  requestLink: {
+    color: 'var(--accent)',
+    cursor: 'pointer',
+  },
+  requestForm: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    marginTop: '16px',
+  },
+  requestTextarea: {
+    resize: 'vertical',
+    fontFamily: 'inherit',
+    fontSize: '14px',
   },
 }
