@@ -164,14 +164,21 @@ async def create_post(
 
 
 @router.get("/tags")
-def list_tags(db: Session = Depends(get_db)):
+def list_tags(since: Optional[str] = None, db: Session = Depends(get_db)):
     from sqlalchemy import text
-    rows = db.execute(text("""
+    if since == "hour":
+        since_clause = "AND created_at >= NOW() - INTERVAL '1 hour'"
+    elif since == "day":
+        since_clause = "AND created_at >= NOW() - INTERVAL '24 hours'"
+    else:
+        since_clause = ""
+    rows = db.execute(text(f"""
         SELECT tag, COUNT(*) AS count
         FROM (
             SELECT unnest(string_to_array(lower(tags), ',')) AS tag
             FROM posts
             WHERE tags IS NOT NULL AND parent_post_id IS NULL
+            {since_clause}
         ) t
         WHERE tag != ''
         GROUP BY tag

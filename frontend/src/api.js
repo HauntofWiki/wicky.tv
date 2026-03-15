@@ -72,7 +72,8 @@ export const unblockUser = (username) =>
 export const listPosts = (username) =>
   request(`/posts${username ? `?username=${encodeURIComponent(username)}` : ''}`)
 
-export const getTags = () => request('/posts/tags')
+export const getTags = (since) =>
+  request(`/posts/tags${since ? `?since=${since}` : ''}`)
 
 export const listPostsByTag = (tag) =>
   request(`/posts?tag=${encodeURIComponent(tag)}`)

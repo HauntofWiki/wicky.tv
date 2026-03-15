@@ -3,18 +3,26 @@ import { useNavigate } from 'react-router-dom'
 import { getTags } from '../api'
 import { useAuth } from '../App'
 
+const WINDOWS = [
+  { label: '1h', value: 'hour' },
+  { label: '24h', value: 'day' },
+  { label: 'all', value: null },
+]
+
 export default function TagsIndex() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [tags, setTags] = useState([])
   const [loading, setLoading] = useState(true)
+  const [window, setWindow] = useState(null)
 
   useEffect(() => {
-    getTags()
+    setLoading(true)
+    getTags(window)
       .then(setTags)
-      .catch(() => {})
+      .catch(() => setTags([]))
       .finally(() => setLoading(false))
-  }, [])
+  }, [window])
 
   const max = tags[0]?.count || 1
 
@@ -32,7 +40,20 @@ export default function TagsIndex() {
       </div>
 
       <div className="page-body" style={styles.body}>
-        <p style={styles.pageLabel}>tags</p>
+        <div style={styles.labelRow}>
+          <p style={styles.pageLabel}>tags</p>
+          <div style={styles.toggle}>
+            {WINDOWS.map(w => (
+              <span
+                key={String(w.value)}
+                style={window === w.value ? styles.toggleActive : styles.toggleOption}
+                onClick={() => setWindow(w.value)}
+              >
+                {w.label}
+              </span>
+            ))}
+          </div>
+        </div>
 
         {loading ? (
           <p style={styles.muted}>loading...</p>
@@ -73,9 +94,24 @@ const styles = {
     maxWidth: '600px', width: '100%',
     margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '8px',
   },
+  labelRow: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: '16px',
+  },
   pageLabel: {
     color: 'var(--accent)', fontSize: '13px', letterSpacing: '0.1em',
-    textTransform: 'uppercase', marginBottom: '16px',
+    textTransform: 'uppercase', margin: 0,
+  },
+  toggle: { display: 'flex', gap: '4px' },
+  toggleOption: {
+    padding: '3px 10px', borderRadius: '3px', fontSize: '12px',
+    color: 'var(--text-muted)', cursor: 'pointer',
+    border: '1px solid var(--border)',
+  },
+  toggleActive: {
+    padding: '3px 10px', borderRadius: '3px', fontSize: '12px',
+    color: 'var(--accent)', cursor: 'pointer',
+    border: '1px solid var(--accent)',
   },
   muted: { color: 'var(--text-muted)', fontSize: '13px' },
   list: { display: 'flex', flexDirection: 'column', gap: '2px' },
