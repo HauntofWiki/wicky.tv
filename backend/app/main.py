@@ -60,6 +60,9 @@ def _migrate():
         db.execute(text(
             "ALTER TABLE posts ADD COLUMN IF NOT EXISTS show_in_feed BOOLEAN NOT NULL DEFAULT FALSE"
         ))
+        db.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS title VARCHAR(100)"
+        ))
         db.commit()
     except Exception:
         db.rollback()

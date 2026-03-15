@@ -36,10 +36,10 @@ export const listInvites = () => request('/admin/invites')
 
 export const getProfile = (username) => request(`/users/${username}`)
 
-export const updateProfile = (display_name, bio) =>
+export const updateProfile = (display_name, title, bio) =>
   request('/users/me', {
     method: 'PUT',
-    body: JSON.stringify({ display_name, bio }),
+    body: JSON.stringify({ display_name, title, bio }),
   })
 
 export const getFeed = () => request('/posts/feed')

@@ -23,6 +23,7 @@ def _user_public(user: User) -> dict:
     return {
         "username": user.username,
         "display_name": user.display_name,
+        "title": user.title,
         "bio": user.bio,
         "profile_picture": user.profile_picture,
         "created_at": user.created_at.isoformat() if user.created_at else None,
@@ -31,6 +32,7 @@ def _user_public(user: User) -> dict:
 
 class UpdateProfileRequest(BaseModel):
     display_name: str | None = None
+    title: str | None = None
     bio: str | None = None
 
 
@@ -64,6 +66,8 @@ def update_profile(
         if len(req.display_name) > 100:
             raise HTTPException(400, "Display name too long (max 100 chars)")
         user.display_name = req.display_name.strip() or None
+    if req.title is not None:
+        user.title = req.title.strip()[:100] or None
     if req.bio is not None:
         user.bio = req.bio or None
     db.commit()

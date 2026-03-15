@@ -238,6 +238,11 @@ function ReplyCard({ reply, replyById, user, onQuote, onEdit, onDelete, navigate
         <span style={styles.replyAuthor} onClick={() => navigate(`/@${reply.user.username}`)}>
           @{reply.user.username}
         </span>
+        {reply.user.title && (
+          <span style={styles.titleBadge}>
+            <span style={styles.titleSep}>✦</span> {reply.user.title}
+          </span>
+        )}
         <span style={styles.muted}>
           {new Date(reply.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
           {reply.is_edited && ' · edited'}
@@ -347,6 +352,11 @@ export default function Post() {
             <span style={styles.username} onClick={() => navigate(`/@${post.user.username}`)}>
               @{post.user.username}
             </span>
+            {post.user.title && (
+              <span style={styles.titleBadge}>
+                <span style={styles.titleSep}>✦</span> {post.user.title}
+              </span>
+            )}
             <span style={styles.muted}>
               {new Date(post.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
               {post.is_edited && ' · edited'}
@@ -496,6 +506,8 @@ const styles = {
   },
   replyMeta: { display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' },
   replyAuthor: { color: 'var(--accent)', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' },
+  titleBadge: { color: 'var(--title, #00e8c8)', fontSize: '13px' },
+  titleSep: { color: 'var(--title, #00e8c8)' },
   replyBody: { lineHeight: '1.6', fontSize: '14px' },
   replyMediaWrap: { borderRadius: '4px', overflow: 'hidden', maxWidth: '500px' },
   replyMedia: { width: '100%', maxHeight: '400px', objectFit: 'contain', display: 'block' },

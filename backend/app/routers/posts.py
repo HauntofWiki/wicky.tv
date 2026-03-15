@@ -42,6 +42,7 @@ def _post_dict(post: Post) -> dict:
         "user": {
             "username": post.user.username,
             "display_name": post.user.display_name,
+            "title": post.user.title,
             "profile_picture": post.user.profile_picture,
         },
     }

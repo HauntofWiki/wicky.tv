@@ -11,6 +11,7 @@ export default function Settings() {
   const fileInputRef = useRef(null)
 
   const [displayName, setDisplayName] = useState('')
+  const [title, setTitle] = useState('')
   const [bio, setBio] = useState('')
   const [preview, setPreview] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -21,6 +22,7 @@ export default function Settings() {
   useEffect(() => {
     if (user) {
       setDisplayName(user.display_name || '')
+      setTitle(user.title || '')
       setBio(user.bio || '')
     }
   }, [user])
@@ -31,8 +33,8 @@ export default function Settings() {
     setError('')
     setSuccess('')
     try {
-      const updated = await updateProfile(displayName.trim() || null, bio || null)
-      setUser((prev) => ({ ...prev, display_name: updated.display_name, bio: updated.bio }))
+      const updated = await updateProfile(displayName.trim() || null, title.trim() || null, bio || null)
+      setUser((prev) => ({ ...prev, display_name: updated.display_name, title: updated.title, bio: updated.bio }))
       setSuccess('Profile saved.')
     } catch (err) {
       setError(err.message)
@@ -116,6 +118,22 @@ export default function Settings() {
               placeholder={user?.username}
               maxLength={100}
             />
+          </section>
+
+          <section style={styles.section}>
+            <label style={styles.sectionLabel}>title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="ruler of the land"
+              maxLength={100}
+            />
+            <span style={styles.titlePreview}>
+              {title.trim()
+                ? <><span style={styles.titleSep}>✦</span> <span style={styles.titleText}>{title.trim()}</span></>
+                : <span style={styles.hint}>shows next to your username</span>}
+            </span>
           </section>
 
           <section style={styles.section}>
@@ -279,5 +297,19 @@ const styles = {
   },
   muted: {
     color: 'var(--text-muted)',
+  },
+  titlePreview: {
+    fontSize: '13px',
+  },
+  titleSep: {
+    color: 'var(--title)',
+    marginRight: '2px',
+  },
+  titleText: {
+    color: 'var(--title)',
+  },
+  hint: {
+    color: 'var(--text-muted)',
+    fontSize: '12px',
   },
 }

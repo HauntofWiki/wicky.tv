@@ -15,6 +15,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     display_name = Column(String(100))
+    title = Column(String(100))
     bio = Column(Text)
     profile_picture = Column(String(255))
     is_admin = Column(Boolean, default=False, nullable=False)
