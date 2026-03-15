@@ -551,7 +551,7 @@ const styles = {
     color: 'inherit', fontFamily: 'inherit', fontSize: '13px', padding: '7px 10px',
   },
   composeActions: { display: 'flex', alignItems: 'center' },
-  feedToggle: { color: 'var(--text-muted)', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center' },
+  feedToggle: { color: 'var(--text-muted)', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' },
   btn: {
     background: 'var(--accent)', color: '#000', border: 'none', borderRadius: '4px',
     padding: '6px 20px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold',
