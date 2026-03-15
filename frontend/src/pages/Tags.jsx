@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { listPostsByTag } from '../api'
-import { useAuth } from '../App'
+import NavHeader from '../components/NavHeader'
 
 export default function Tags() {
   const { tag } = useParams()
-  const { user } = useAuth()
   const navigate = useNavigate()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -20,17 +19,7 @@ export default function Tags() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.header}>
-        <span style={styles.logo} onClick={() => navigate('/home')}>wicky.tv</span>
-        <div style={styles.nav}>
-          <span style={styles.navLink} onClick={() => navigate('/tags')}>all tags</span>
-          {user ? (
-            <span style={styles.navLink} onClick={() => navigate('/home')}>home</span>
-          ) : (
-            <span style={styles.navLink} onClick={() => navigate('/login')}>log in</span>
-          )}
-        </div>
-      </div>
+      <NavHeader />
 
       <div className="page-body" style={styles.body}>
         <p style={styles.tagLabel}>{tag}</p>
@@ -83,13 +72,6 @@ export default function Tags() {
 
 const styles = {
   page: { minHeight: '100vh', display: 'flex', flexDirection: 'column' },
-  header: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '16px 24px', borderBottom: '1px solid var(--border)',
-  },
-  logo: { color: 'var(--accent)', fontSize: '18px', cursor: 'pointer' },
-  nav: { display: 'flex', gap: '20px' },
-  navLink: { color: 'var(--text-muted)', cursor: 'pointer' },
   body: {
     maxWidth: '600px', width: '100%',
     margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '8px',

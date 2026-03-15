@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { followUser, getProfile, listPosts, unfollowUser } from '../api'
 import { useAuth } from '../App'
+import NavHeader from '../components/NavHeader'
 
 export default function Profile() {
   const { username: rawUsername } = useParams()
@@ -26,7 +27,7 @@ export default function Profile() {
   if (error) {
     return (
       <div style={styles.page}>
-        <Header navigate={navigate} user={user} />
+        <NavHeader />
         <div className="page-body" style={styles.body}>
           <p style={styles.muted}>{error}</p>
         </div>
@@ -60,7 +61,7 @@ export default function Profile() {
 
   return (
     <div style={styles.page}>
-      <Header navigate={navigate} user={user} />
+      <NavHeader />
       <div className="page-body" style={styles.body}>
         <div style={styles.profileHeader}>
           <div style={styles.avatarWrap}>
@@ -185,51 +186,12 @@ export default function Profile() {
   )
 }
 
-function Header({ navigate, user }) {
-  return (
-    <div style={styles.header}>
-      <span style={styles.logo} onClick={() => navigate('/home')} role="button">
-        wicky.tv
-      </span>
-      <div style={styles.nav}>
-        <span style={styles.navLink} onClick={() => navigate('/home')}>
-          morioh
-        </span>
-        {user && (
-          <span style={styles.navLink} onClick={() => navigate(`/@${user.username}`)}>
-            @{user.username}
-          </span>
-        )}
-      </div>
-    </div>
-  )
-}
 
 const styles = {
   page: {
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '16px 24px',
-    borderBottom: '1px solid var(--border)',
-  },
-  logo: {
-    color: 'var(--accent)',
-    fontSize: '18px',
-    cursor: 'pointer',
-  },
-  nav: {
-    display: 'flex',
-    gap: '20px',
-  },
-  navLink: {
-    color: 'var(--text-muted)',
-    cursor: 'pointer',
   },
   body: {
     maxWidth: '800px',

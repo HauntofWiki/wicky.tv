@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { changePassword, updateProfile, uploadAvatar } from '../api'
 import { useAuth } from '../App'
+import NavHeader from '../components/NavHeader'
 
 export default function Settings() {
   const { user, setUser } = useAuth()
@@ -87,19 +88,7 @@ export default function Settings() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.header}>
-        <span style={styles.logo} onClick={() => navigate('/home')} role="button">
-          wicky.tv
-        </span>
-        <div style={styles.nav}>
-          <span style={styles.navLink} onClick={() => navigate('/home')}>
-            morioh
-          </span>
-          <span style={styles.navLink} onClick={() => navigate(`/@${user?.username}`)}>
-            @{user?.username}
-          </span>
-        </div>
-      </div>
+      <NavHeader />
       <div className="page-body" style={styles.body}>
         <h1 style={styles.title}>settings</h1>
 
@@ -234,26 +223,6 @@ const styles = {
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '16px 24px',
-    borderBottom: '1px solid var(--border)',
-  },
-  logo: {
-    color: 'var(--accent)',
-    fontSize: '18px',
-    cursor: 'pointer',
-  },
-  nav: {
-    display: 'flex',
-    gap: '20px',
-  },
-  navLink: {
-    color: 'var(--text-muted)',
-    cursor: 'pointer',
   },
   body: {
     maxWidth: '540px',

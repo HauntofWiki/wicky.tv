@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getPost, updatePost } from '../api'
 import { useAuth } from '../App'
+import NavHeader from '../components/NavHeader'
 
 export default function EditPost() {
   const { id } = useParams()
@@ -67,12 +68,7 @@ export default function EditPost() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.header}>
-        <span style={styles.logo} onClick={() => navigate('/home')}>wicky.tv</span>
-        <div style={styles.nav}>
-          <span style={styles.navLink} onClick={() => navigate(`/post/${id}`)}>cancel</span>
-        </div>
-      </div>
+      <NavHeader />
 
       <div style={styles.body}>
         <h2 style={styles.pageTitle}>edit post</h2>

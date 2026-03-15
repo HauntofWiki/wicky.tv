@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { followUser, listUsers, unfollowUser } from '../api'
 import { useAuth } from '../App'
+import NavHeader from '../components/NavHeader'
 
 export default function People() {
   const { user } = useAuth()
@@ -39,15 +40,7 @@ export default function People() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.header}>
-        <span style={styles.logo} onClick={() => navigate('/home')}>wicky.tv</span>
-        <div style={styles.nav}>
-          <span style={styles.navLink} onClick={() => navigate('/home')}>home</span>
-          <span style={styles.navLink} onClick={() => navigate(`/@${user?.username}`)}>
-            @{user?.username}
-          </span>
-        </div>
-      </div>
+      <NavHeader />
 
       <div style={styles.body}>
         <p style={styles.pageTitle}>people</p>
@@ -98,13 +91,6 @@ export default function People() {
 
 const styles = {
   page: { minHeight: '100vh', display: 'flex', flexDirection: 'column' },
-  header: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '16px 24px', borderBottom: '1px solid var(--border)',
-  },
-  logo: { color: 'var(--accent)', fontSize: '18px', cursor: 'pointer' },
-  nav: { display: 'flex', gap: '20px' },
-  navLink: { color: 'var(--text-muted)', cursor: 'pointer' },
   body: {
     padding: '40px 24px', maxWidth: '600px', width: '100%',
     margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px',

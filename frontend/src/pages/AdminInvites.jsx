@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createInvite, dismissAccessRequest, listAccessRequests, listInvites } from '../api'
+import NavHeader from '../components/NavHeader'
 
 export default function AdminInvites() {
   const navigate = useNavigate()
@@ -47,9 +48,7 @@ export default function AdminInvites() {
 
   return (
     <div style={styles.page}>
-      <div style={styles.header}>
-        <span style={styles.logo} onClick={() => navigate('/home')}>wicky.tv</span>
-      </div>
+      <NavHeader />
       <div style={styles.body}>
         <div style={styles.titleRow}>
           <h2>invite codes</h2>

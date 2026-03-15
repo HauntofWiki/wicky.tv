@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getFeed, logout } from '../api'
+import { getFeed } from '../api'
 import { useAuth } from '../App'
+import NavHeader from '../components/NavHeader'
 
 export default function Home() {
-  const { user, setUser } = useAuth()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
-  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     getFeed()
@@ -17,45 +17,9 @@ export default function Home() {
       .finally(() => setLoading(false))
   }, [])
 
-  async function handleLogout() {
-    await logout()
-    setUser(null)
-    navigate('/login')
-  }
-
   return (
     <div style={styles.page}>
-      <div style={styles.header}>
-        <span style={styles.logo}>wicky.tv</span>
-        <div className="nav-full">
-          {user?.is_admin && (
-            <span style={styles.navLink} onClick={() => navigate('/admin/invites')}>invites</span>
-          )}
-          <span style={styles.navLink} onClick={() => navigate('/new')}>new post</span>
-          <span style={styles.navLink} onClick={() => navigate('/people')}>people</span>
-          <span style={styles.navLink} onClick={() => navigate('/tags')}>tags</span>
-          <span style={styles.navLink} onClick={() => navigate('/settings')}>settings</span>
-          <span style={styles.navLink} onClick={() => navigate(`/@${user?.username}`)}>@{user?.username}</span>
-          <span style={styles.navLink} onClick={handleLogout}>log out</span>
-        </div>
-        <button className="hamburger-btn" onClick={() => setMenuOpen(o => !o)}>
-          {menuOpen ? '✕' : '≡'}
-        </button>
-      </div>
-
-      {menuOpen && (
-        <div className="mobile-nav-menu">
-          {user?.is_admin && (
-            <span className="mobile-nav-menu-item" onClick={() => { navigate('/admin/invites'); setMenuOpen(false) }}>invites</span>
-          )}
-          <span className="mobile-nav-menu-item" onClick={() => { navigate('/new'); setMenuOpen(false) }}>new post</span>
-          <span className="mobile-nav-menu-item" onClick={() => { navigate('/people'); setMenuOpen(false) }}>people</span>
-          <span className="mobile-nav-menu-item" onClick={() => { navigate('/tags'); setMenuOpen(false) }}>tags</span>
-          <span className="mobile-nav-menu-item" onClick={() => { navigate('/settings'); setMenuOpen(false) }}>settings</span>
-          <span className="mobile-nav-menu-item" onClick={() => { navigate(`/@${user?.username}`); setMenuOpen(false) }}>@{user?.username}</span>
-          <span className="mobile-nav-menu-item" onClick={handleLogout}>log out</span>
-        </div>
-      )}
+      <NavHeader />
 
       <div className="page-body" style={styles.body}>
         <p style={styles.welcome}>hey, {user?.display_name || user?.username}.</p>
@@ -135,21 +99,6 @@ const styles = {
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '16px 24px',
-    borderBottom: '1px solid var(--border)',
-  },
-  logo: {
-    color: 'var(--accent)',
-    fontSize: '18px',
-  },
-  navLink: {
-    color: 'var(--text-muted)',
-    cursor: 'pointer',
   },
   body: {
     maxWidth: '600px',
