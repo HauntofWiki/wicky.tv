@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createInvite, dismissAccessRequest, listAccessRequests, listInvites } from '../api'
+import { approveAccessRequest, createInvite, deleteUser, dismissAccessRequest, listAccessRequests, listAdminUsers, listInvites } from '../api'
 import NavHeader from '../components/NavHeader'
 
 export default function AdminInvites() {
@@ -11,15 +11,16 @@ export default function AdminInvites() {
   const [error, setError] = useState(null)
   const [copied, setCopied] = useState(null)
   const [requests, setRequests] = useState([])
+  const [members, setMembers] = useState([])
+  const [confirmDelete, setConfirmDelete] = useState(null)
 
   useEffect(() => {
     listInvites()
       .then(setInvites)
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
-    listAccessRequests()
-      .then(setRequests)
-      .catch(() => {})
+    listAccessRequests().then(setRequests).catch(() => {})
+    listAdminUsers().then(setMembers).catch(() => {})
   }, [])
 
   async function handleGenerate() {
@@ -44,6 +45,26 @@ export default function AdminInvites() {
   async function handleDismiss(id) {
     await dismissAccessRequest(id)
     setRequests(prev => prev.filter(r => r.id !== id))
+  }
+
+  async function handleApprove(id) {
+    try {
+      await approveAccessRequest(id)
+      setRequests(prev => prev.filter(r => r.id !== id))
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  async function handleDeleteUser(username) {
+    try {
+      await deleteUser(username)
+      setMembers(prev => prev.filter(u => u.username !== username))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setConfirmDelete(null)
+    }
   }
 
   return (
@@ -98,6 +119,42 @@ export default function AdminInvites() {
             </tbody>
           </table>
         )}
+        {members.length > 0 && (
+          <div style={styles.requestsSection}>
+            <h3 style={styles.sectionTitle}>members</h3>
+            <table style={styles.table}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>username</th>
+                  <th style={styles.th}>display name</th>
+                  <th style={styles.th}>joined</th>
+                  <th style={styles.th}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map(u => (
+                  <tr key={u.username} style={styles.row}>
+                    <td style={styles.td}><span style={styles.code}>@{u.username}</span></td>
+                    <td style={styles.td}>{u.display_name || '—'}</td>
+                    <td style={styles.td}>{new Date(u.created_at).toLocaleDateString()}</td>
+                    <td style={styles.td}>
+                      {confirmDelete === u.username ? (
+                        <>
+                          <span style={styles.danger} onClick={() => handleDeleteUser(u.username)}>confirm</span>
+                          {' · '}
+                          <span style={styles.copyBtn} onClick={() => setConfirmDelete(null)}>cancel</span>
+                        </>
+                      ) : (
+                        <span style={styles.danger} onClick={() => setConfirmDelete(u.username)}>delete</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
         {requests.length > 0 && (
           <div style={styles.requestsSection}>
             <h3 style={styles.sectionTitle}>
@@ -126,9 +183,9 @@ export default function AdminInvites() {
                       {new Date(r.created_at).toLocaleDateString()}
                     </td>
                     <td style={styles.td}>
-                      <span style={styles.copyBtn} onClick={() => handleDismiss(r.id)}>
-                        dismiss
-                      </span>
+                      <span style={styles.approveBtn} onClick={() => handleApprove(r.id)}>approve</span>
+                      {' · '}
+                      <span style={styles.copyBtn} onClick={() => handleDismiss(r.id)}>dismiss</span>
                     </td>
                   </tr>
                 ))}
@@ -194,6 +251,16 @@ const styles = {
   },
   copyBtn: {
     color: 'var(--text-muted)',
+    cursor: 'pointer',
+    fontSize: '12px',
+  },
+  danger: {
+    color: 'var(--error)',
+    cursor: 'pointer',
+    fontSize: '12px',
+  },
+  approveBtn: {
+    color: 'var(--accent)',
     cursor: 'pointer',
     fontSize: '12px',
   },

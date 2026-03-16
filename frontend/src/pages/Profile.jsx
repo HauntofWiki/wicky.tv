@@ -135,14 +135,19 @@ export default function Profile() {
                   style={styles.gridItem}
                   onClick={() => navigate(`/post/${post.id}`)}
                 >
-                  {post.media_type === 'video' ? (
+                  {post.thumbnail_path ? (
+                    <div style={styles.videoThumbWrap}>
+                      <img src={`/uploads/${post.thumbnail_path}`} alt={post.title} style={styles.gridImg} />
+                      {post.media_type === 'video' && <span style={styles.gridPlayOverlay}>▶</span>}
+                    </div>
+                  ) : post.media_type === 'video' ? (
                     <div style={styles.videoThumb}>
                       <span style={styles.playIcon}>▶</span>
                       <span style={styles.gridItemTitle}>{post.title}</span>
                     </div>
                   ) : (
                     <img
-                      src={`/uploads/${post.thumbnail_path || post.media_path}`}
+                      src={`/uploads/${post.media_path}`}
                       alt={post.title}
                       style={styles.gridImg}
                     />
@@ -154,13 +159,18 @@ export default function Profile() {
             <div style={styles.feedList}>
               {posts.map(post => (
                 <div key={post.id} style={styles.feedCard} onClick={() => navigate(`/post/${post.id}`)}>
-                  {post.media_type === 'video' ? (
+                  {post.thumbnail_path ? (
+                    <div style={styles.feedThumbWrap}>
+                      <img src={`/uploads/${post.thumbnail_path}`} alt={post.title} style={styles.feedThumbImg} />
+                      {post.media_type === 'video' && <span style={styles.feedPlayOverlay}>▶</span>}
+                    </div>
+                  ) : post.media_type === 'video' ? (
                     <div style={styles.feedThumb}>
                       <span style={styles.feedPlayIcon}>▶</span>
                     </div>
                   ) : (
                     <img
-                      src={`/uploads/${post.thumbnail_path || post.media_path}`}
+                      src={`/uploads/${post.media_path}`}
                       alt={post.title}
                       style={styles.feedThumbImg}
                     />
@@ -311,6 +321,14 @@ const styles = {
     display: 'flex', gap: '14px', alignItems: 'center',
     padding: '10px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer',
   },
+  feedThumbWrap: {
+    position: 'relative', width: '72px', height: '72px', flexShrink: 0,
+  },
+  feedPlayOverlay: {
+    position: 'absolute', inset: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: 'var(--accent)', fontSize: '22px', pointerEvents: 'none',
+  },
   feedThumb: {
     width: '72px', height: '72px', flexShrink: 0,
     background: 'var(--surface)', borderRadius: '3px',
@@ -350,6 +368,14 @@ const styles = {
     height: '100%',
     objectFit: 'cover',
     display: 'block',
+  },
+  videoThumbWrap: {
+    position: 'relative', width: '100%', height: '100%',
+  },
+  gridPlayOverlay: {
+    position: 'absolute', inset: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: 'var(--accent)', fontSize: '28px', pointerEvents: 'none',
   },
   videoThumb: {
     width: '100%',

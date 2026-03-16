@@ -9,17 +9,25 @@ router = APIRouter(prefix="/api/notifications", tags=["notifications"])
 
 
 @router.get("")
-def get_notifications(current_user=Depends(get_current_user), db: Session = Depends(get_db)):
+def get_notifications(
+    limit: int = 20,
+    offset: int = 0,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    total = db.query(Notification).filter(Notification.user_id == current_user.id).count()
+    unread = db.query(Notification).filter(Notification.user_id == current_user.id, Notification.is_read == False).count()
     notifs = (
         db.query(Notification)
         .filter(Notification.user_id == current_user.id)
         .order_by(Notification.created_at.desc())
-        .limit(50)
+        .offset(offset)
+        .limit(limit)
         .all()
     )
-    unread = sum(1 for n in notifs if not n.is_read)
     return {
         "unread": unread,
+        "total": total,
         "notifications": [
             {
                 "id": n.id,

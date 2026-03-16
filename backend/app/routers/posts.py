@@ -1,12 +1,16 @@
 import io
+import logging
 import os
 import subprocess
 import uuid
+
+logger = logging.getLogger(__name__)
 from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from PIL import Image
+import magic
+from PIL import Image, ImageOps
 from sqlalchemy.orm import Session
 
 from ..auth import get_current_user
@@ -56,17 +60,21 @@ def _normalize_tags(tags: str) -> str:
 
 def _make_thumbnail(image_bytes: bytes, save_path: str):
     img = Image.open(io.BytesIO(image_bytes))
+    img = ImageOps.exif_transpose(img)
     img.thumbnail((800, 800), Image.LANCZOS)
-    fmt = img.format or "JPEG"
-    img.save(save_path, format=fmt)
+    img.save(save_path, format="JPEG")
 
 
-def _make_video_thumbnail(video_path: str, save_path: str):
-    subprocess.run(
+def _make_video_thumbnail(video_path: str, save_path: str) -> bool:
+    result = subprocess.run(
         ["ffmpeg", "-y", "-ss", "1", "-i", video_path, "-frames:v", "1", "-q:v", "2", save_path],
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
     )
+    if result.returncode != 0:
+        logger.error("ffmpeg thumbnail failed for %s: %s", video_path, result.stderr.decode(errors="replace"))
+        return False
+    return True
 
 
 @router.post("")
@@ -119,17 +127,18 @@ async def create_post(
     thumbnail_path = None
 
     if media and media.filename:
-        content_type = media.content_type
-        if content_type in ALLOWED_IMAGE_TYPES:
+        contents = await media.read()
+
+        actual_mime = magic.from_buffer(contents[:2048], mime=True)
+        if actual_mime in ALLOWED_IMAGE_TYPES:
             media_type = "image"
             max_size = MAX_IMAGE_SIZE
-        elif content_type in ALLOWED_VIDEO_TYPES:
+        elif actual_mime in ALLOWED_VIDEO_TYPES:
             media_type = "video"
             max_size = MAX_VIDEO_SIZE
         else:
-            raise HTTPException(400, f"Unsupported file type: {content_type}")
+            raise HTTPException(400, f"Unsupported file type: {actual_mime}")
 
-        contents = await media.read()
         if len(contents) > max_size:
             raise HTTPException(400, f"File exceeds {max_size // (1024*1024)}MB limit")
 
@@ -144,8 +153,15 @@ async def create_post(
         os.makedirs(save_dir, exist_ok=True)
         os.makedirs(thumbs_dir, exist_ok=True)
 
-        with open(os.path.join(save_dir, filename), "wb") as f:
-            f.write(contents)
+        full_path = os.path.join(save_dir, filename)
+        if media_type == "image":
+            img = Image.open(io.BytesIO(contents))
+            img = ImageOps.exif_transpose(img)
+            img.thumbnail((2000, 2000), Image.LANCZOS)
+            img.save(full_path)
+        else:
+            with open(full_path, "wb") as f:
+                f.write(contents)
         media_path = f"{subdir}/{filename}"
 
         if media_type == "image":
@@ -154,11 +170,12 @@ async def create_post(
             thumbnail_path = f"thumbnails/{thumb_filename}"
         elif media_type == "video":
             thumb_filename = f"thumb_{filename.rsplit('.', 1)[0]}.jpg"
-            _make_video_thumbnail(
+            ok = _make_video_thumbnail(
                 os.path.join(save_dir, filename),
                 os.path.join(thumbs_dir, thumb_filename),
             )
-            thumbnail_path = f"thumbnails/{thumb_filename}"
+            if ok:
+                thumbnail_path = f"thumbnails/{thumb_filename}"
 
     post = Post(
         user_id=current_user.id,
@@ -196,7 +213,7 @@ async def create_post(
             actor_username=current_user.username,
             type="quote",
             post_id=post.id,
-            parent_post_id=quoted.id,
+            parent_post_id=post.parent_post_id,
         ))
 
     db.commit()
@@ -223,24 +240,32 @@ def public_feed(limit: int = 50, offset: int = 0, db: Session = Depends(get_db))
 @router.get("/tags")
 def list_tags(since: Optional[str] = None, db: Session = Depends(get_db)):
     from sqlalchemy import text
-    if since == "hour":
-        since_clause = "AND created_at >= NOW() - INTERVAL '1 hour'"
-    elif since == "day":
-        since_clause = "AND created_at >= NOW() - INTERVAL '24 hours'"
+    hours = {"hour": 1, "day": 24}.get(since)
+    if hours:
+        rows = db.execute(text("""
+            SELECT tag, COUNT(*) AS count
+            FROM (
+                SELECT unnest(string_to_array(lower(tags), ',')) AS tag
+                FROM posts
+                WHERE tags IS NOT NULL AND parent_post_id IS NULL
+                AND created_at >= NOW() - (:hours * INTERVAL '1 hour')
+            ) t
+            WHERE tag != ''
+            GROUP BY tag
+            ORDER BY count DESC, tag ASC
+        """), {"hours": hours}).fetchall()
     else:
-        since_clause = ""
-    rows = db.execute(text(f"""
-        SELECT tag, COUNT(*) AS count
-        FROM (
-            SELECT unnest(string_to_array(lower(tags), ',')) AS tag
-            FROM posts
-            WHERE tags IS NOT NULL AND parent_post_id IS NULL
-            {since_clause}
-        ) t
-        WHERE tag != ''
-        GROUP BY tag
-        ORDER BY count DESC, tag ASC
-    """)).fetchall()
+        rows = db.execute(text("""
+            SELECT tag, COUNT(*) AS count
+            FROM (
+                SELECT unnest(string_to_array(lower(tags), ',')) AS tag
+                FROM posts
+                WHERE tags IS NOT NULL AND parent_post_id IS NULL
+            ) t
+            WHERE tag != ''
+            GROUP BY tag
+            ORDER BY count DESC, tag ASC
+        """)).fetchall()
     return [{"tag": row[0], "count": row[1]} for row in rows]
 
 
@@ -248,6 +273,7 @@ def list_tags(since: Optional[str] = None, db: Session = Depends(get_db)):
 def get_feed(
     limit: int = 50,
     offset: int = 0,
+    sort: str = "new",
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -256,18 +282,33 @@ def get_feed(
     ]
     if not followed_ids:
         return []
-    from sqlalchemy import or_
-    posts = (
-        db.query(Post)
-        .filter(
-            Post.user_id.in_(followed_ids),
-            or_(Post.parent_post_id == None, Post.show_in_feed == True),
-        )
-        .order_by(Post.created_at.desc())
-        .offset(offset)
-        .limit(limit)
-        .all()
+    from sqlalchemy import or_, func
+    from sqlalchemy.orm import aliased
+    base_filter = (
+        Post.user_id.in_(followed_ids),
+        or_(Post.parent_post_id == None, Post.show_in_feed == True),
     )
+    if sort == "active":
+        Reply = aliased(Post)
+        posts = (
+            db.query(Post)
+            .outerjoin(Reply, Reply.parent_post_id == Post.id)
+            .filter(*base_filter)
+            .group_by(Post.id)
+            .order_by(func.coalesce(func.max(Reply.created_at), Post.created_at).desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+    else:
+        posts = (
+            db.query(Post)
+            .filter(*base_filter)
+            .order_by(Post.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
     result = []
     for p in posts:
         d = _post_dict(p)

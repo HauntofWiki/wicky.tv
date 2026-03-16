@@ -273,17 +273,26 @@ export default function Post() {
   const [quotedPost, setQuotedPost] = useState(null)
   const [editingPost, setEditingPost] = useState(null)
 
+  const didScrollRef = useRef(false)
+
   useEffect(() => {
+    didScrollRef.current = false
     getPost(id).then(setPost).catch(() => setError('Post not found'))
-    listReplies(id).then(replies => {
+
+    const loadReplies = (scroll) => listReplies(id).then(replies => {
       setReplies(replies)
-      if (highlightId) {
+      if (scroll && highlightId && !didScrollRef.current) {
+        didScrollRef.current = true
         setTimeout(() => {
           const el = document.getElementById(`reply-${highlightId}`)
           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }, 100)
       }
     }).catch(() => {})
+
+    loadReplies(true)
+    const pollId = setInterval(() => loadReplies(false), 10000)
+    return () => clearInterval(pollId)
   }, [id])
 
   async function handlePin() {

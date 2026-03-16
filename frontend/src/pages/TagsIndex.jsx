@@ -14,6 +14,7 @@ export default function TagsIndex() {
   const [tags, setTags] = useState([])
   const [loading, setLoading] = useState(true)
   const [window, setWindow] = useState(null)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     setLoading(true)
@@ -23,7 +24,8 @@ export default function TagsIndex() {
       .finally(() => setLoading(false))
   }, [window])
 
-  const max = tags[0]?.count || 1
+  const filtered = search.trim() ? tags.filter(t => t.tag.includes(search.toLowerCase().trim())) : tags
+  const max = filtered[0]?.count || 1
 
   return (
     <div style={styles.page}>
@@ -45,13 +47,20 @@ export default function TagsIndex() {
           </div>
         </div>
 
+        <input
+          style={styles.search}
+          placeholder="filter tags..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+
         {loading ? (
           <p style={styles.muted}>loading...</p>
-        ) : tags.length === 0 ? (
-          <p style={styles.muted}>no tags yet.</p>
+        ) : filtered.length === 0 ? (
+          <p style={styles.muted}>no tags found.</p>
         ) : (
           <div style={styles.list}>
-            {tags.map(({ tag, count }) => (
+            {filtered.map(({ tag, count }) => (
               <div
                 key={tag}
                 style={styles.row}
@@ -97,6 +106,7 @@ const styles = {
     border: '1px solid var(--accent)',
   },
   muted: { color: 'var(--text-muted)', fontSize: '13px' },
+  search: { width: '100%', boxSizing: 'border-box', marginBottom: '8px' },
   list: { display: 'flex', flexDirection: 'column', gap: '2px' },
   row: {
     display: 'flex', alignItems: 'center', gap: '12px',

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { login, requestAccess } from '../api'
+
 import { useAuth } from '../App'
 
 export default function Login() {
@@ -79,6 +80,9 @@ export default function Login() {
         </form>
         <p style={styles.footer}>
           have an invite? <Link to="/signup">sign up</Link>
+        </p>
+        <p style={styles.footer}>
+          <Link to="/forgot-password" style={{ color: 'var(--text-muted)' }}>forgot password?</Link>
         </p>
         <p style={styles.footer}>
           no invite?{' '}

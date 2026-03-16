@@ -9,13 +9,13 @@ export default function Home() {
   const navigate = useNavigate()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [sort, setSort] = useState('new')
 
   useEffect(() => {
-    getFeed()
-      .then(setPosts)
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+    getFeed(sort).then(setPosts).catch(() => {}).finally(() => setLoading(false))
+    const id = setInterval(() => { getFeed(sort).then(setPosts).catch(() => {}) }, 10000)
+    return () => clearInterval(id)
+  }, [sort])
 
   return (
     <div style={styles.page}>
@@ -23,7 +23,19 @@ export default function Home() {
 
       <div className="page-body" style={styles.body}>
         <p style={styles.welcome}>hey, {user?.display_name || user?.username}.</p>
-        <p style={styles.feedLabel}>morioh</p>
+        <div style={styles.feedHeader}>
+          <p style={styles.feedLabel}>morioh</p>
+          <div style={styles.sortToggle}>
+            <span
+              style={{ ...styles.sortBtn, ...(sort === 'new' ? styles.sortBtnActive : {}) }}
+              onClick={() => setSort('new')}
+            >new</span>
+            <span
+              style={{ ...styles.sortBtn, ...(sort === 'active' ? styles.sortBtnActive : {}) }}
+              onClick={() => setSort('active')}
+            >active</span>
+          </div>
+        </div>
 
         {loading ? (
           <p style={styles.muted}>loading...</p>
@@ -43,16 +55,21 @@ export default function Home() {
                   style={styles.card}
                   onClick={() => navigate(`/post/${threadId}`)}
                 >
-                  {post.media_type === 'video' ? (
-                    <div style={styles.videoThumb}>
-                      <span style={styles.playIcon}>▶</span>
+                  {post.thumbnail_path ? (
+                    <div style={styles.videoThumbWrap}>
+                      <img src={`/uploads/${post.thumbnail_path}`} alt={displayTitle} style={styles.cardImg} />
+                      {post.media_type === 'video' && <span style={styles.playOverlay}>▶</span>}
                     </div>
                   ) : post.media_path ? (
                     <img
-                      src={`/uploads/${post.thumbnail_path || post.media_path}`}
+                      src={`/uploads/${post.media_path}`}
                       alt={displayTitle}
                       style={styles.cardImg}
                     />
+                  ) : post.media_type === 'video' ? (
+                    <div style={styles.videoThumb}>
+                      <span style={styles.playIcon}>▶</span>
+                    </div>
                   ) : (
                     <div style={styles.textThumb}>↩</div>
                   )}
@@ -112,13 +129,36 @@ const styles = {
     fontSize: '22px',
     margin: 0,
   },
+  feedHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: '4px',
+    marginBottom: '16px',
+  },
   feedLabel: {
     color: 'var(--accent)',
     fontSize: '13px',
     letterSpacing: '0.1em',
     textTransform: 'uppercase',
-    marginTop: '4px',
-    marginBottom: '16px',
+    margin: 0,
+  },
+  sortToggle: {
+    display: 'flex',
+    gap: '4px',
+  },
+  sortBtn: {
+    fontSize: '12px',
+    padding: '3px 10px',
+    borderRadius: '3px',
+    border: '1px solid var(--border)',
+    color: 'var(--text-muted)',
+    cursor: 'pointer',
+    userSelect: 'none',
+  },
+  sortBtnActive: {
+    borderColor: 'var(--accent)',
+    color: 'var(--accent)',
   },
   muted: {
     color: 'var(--text-muted)',
@@ -144,6 +184,22 @@ const styles = {
     borderRadius: '3px',
     flexShrink: 0,
     background: 'var(--surface)',
+  },
+  videoThumbWrap: {
+    position: 'relative',
+    width: '72px',
+    height: '72px',
+    flexShrink: 0,
+  },
+  playOverlay: {
+    position: 'absolute',
+    inset: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'var(--accent)',
+    fontSize: '22px',
+    pointerEvents: 'none',
   },
   videoThumb: {
     width: '72px',

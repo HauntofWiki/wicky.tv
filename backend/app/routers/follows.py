@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import get_current_user
 from ..database import get_db
-from ..models import Follow, User
+from ..models import Follow, Notification, User
 
 router = APIRouter(prefix="/api/users", tags=["follows"])
 
@@ -25,6 +25,11 @@ def follow_user(
         return {"ok": True}
 
     db.add(Follow(follower_id=current_user.id, followed_id=target.id))
+    db.add(Notification(
+        user_id=target.id,
+        actor_username=current_user.username,
+        type="follow",
+    ))
     db.commit()
     return {"ok": True}
 

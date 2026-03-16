@@ -31,9 +31,9 @@ export default function NavHeader() {
         <span style={styles.logo} onClick={() => go(user ? '/home' : '/')}>wicky.tv</span>
         {user ? (
           <>
-            <div className="nav-full" style={styles.nav}>
+            <div className="nav-full">
               {user.is_admin && (
-                <span style={styles.navLink} onClick={() => go('/admin/invites')}>invites</span>
+                <span style={styles.navLink} onClick={() => go('/admin')}>admin</span>
               )}
               <span style={styles.navLink} onClick={() => go('/new')}>new post</span>
               <span style={styles.navLink} onClick={() => go('/people')}>people</span>
@@ -59,7 +59,7 @@ export default function NavHeader() {
       {user && menuOpen && (
         <div className="mobile-nav-menu">
           {user.is_admin && (
-            <span className="mobile-nav-menu-item" onClick={() => go('/admin/invites')}>invites</span>
+            <span className="mobile-nav-menu-item" onClick={() => go('/admin')}>admin</span>
           )}
           <span className="mobile-nav-menu-item" onClick={() => go('/new')}>new post</span>
           <span className="mobile-nav-menu-item" onClick={() => go('/people')}>people</span>
@@ -88,10 +88,6 @@ const styles = {
     color: 'var(--accent)',
     fontSize: '18px',
     cursor: 'pointer',
-  },
-  nav: {
-    display: 'flex',
-    gap: '20px',
   },
   navLink: {
     color: 'var(--text-muted)',

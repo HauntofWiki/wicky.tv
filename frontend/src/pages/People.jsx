@@ -9,6 +9,7 @@ export default function People() {
   const navigate = useNavigate()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     listUsers()
@@ -36,7 +37,10 @@ export default function People() {
     }
   }
 
-  const others = users.filter(u => u.username !== user?.username)
+  const q = search.toLowerCase().trim()
+  const others = users
+    .filter(u => u.username !== user?.username)
+    .filter(u => !q || u.username.includes(q) || (u.display_name || '').toLowerCase().includes(q))
 
   return (
     <div style={styles.page}>
@@ -44,6 +48,12 @@ export default function People() {
 
       <div style={styles.body}>
         <p style={styles.pageTitle}>people</p>
+        <input
+          style={styles.search}
+          placeholder="search..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
 
         {loading ? (
           <p style={styles.muted}>loading...</p>
@@ -99,6 +109,7 @@ const styles = {
     color: 'var(--accent)', fontSize: '13px', letterSpacing: '0.1em',
     textTransform: 'uppercase', margin: 0,
   },
+  search: { width: '100%', boxSizing: 'border-box' },
   muted: { color: 'var(--text-muted)', fontSize: '13px' },
   list: { display: 'flex', flexDirection: 'column' },
   row: {

@@ -3,7 +3,7 @@ import time
 from pathlib import Path
 
 from fastapi import APIRouter, Cookie, Depends, File, HTTPException, UploadFile
-from PIL import Image
+from PIL import Image, ImageOps
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -104,6 +104,7 @@ async def upload_avatar(
 
     try:
         img = Image.open(filepath)
+        img = ImageOps.exif_transpose(img)
         img.thumbnail((400, 400))
         img.save(filepath)
     except Exception:

@@ -1,8 +1,10 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { getMe } from './api'
-import AdminInvites from './pages/AdminInvites'
+import Admin from './pages/Admin'
 import EditPost from './pages/EditPost'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import People from './pages/People'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -58,13 +60,15 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/new" element={<ProtectedRoute><NewPost /></ProtectedRoute>} />
           <Route path="/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
           <Route path="/post/:id" element={<Post />} />
           <Route path="/post/:id/edit" element={<ProtectedRoute><EditPost /></ProtectedRoute>} />
-          <Route path="/admin/invites" element={<AdminRoute><AdminInvites /></AdminRoute>} />
+          <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
           <Route path="/tags" element={<TagsIndex />} />
           <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
           <Route path="/tags/:tag" element={<Tags />} />

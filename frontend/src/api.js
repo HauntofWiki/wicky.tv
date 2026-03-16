@@ -33,6 +33,8 @@ export const createInvite = () =>
   request('/admin/invites', { method: 'POST' })
 
 export const listInvites = () => request('/admin/invites')
+export const listAdminUsers = () => request('/admin/users')
+export const deleteUser = (username) => request(`/admin/users/${username}`, { method: 'DELETE' })
 
 export const getProfile = (username) => request(`/users/${username}`)
 
@@ -49,7 +51,7 @@ export const pinPost = (id) => request(`/posts/${id}/pin`, { method: 'POST' })
 
 export const unpinPost = (id) => request(`/posts/${id}/pin`, { method: 'DELETE' })
 
-export const getFeed = () => request('/posts/feed')
+export const getFeed = (sort = 'new') => request(`/posts/feed?sort=${sort}`)
 
 export const listUsers = () => request('/users')
 
@@ -69,6 +71,9 @@ export const listAccessRequests = () => request('/admin/access-requests')
 
 export const dismissAccessRequest = (id) =>
   request(`/admin/access-requests/${id}`, { method: 'DELETE' })
+
+export const approveAccessRequest = (id) =>
+  request(`/admin/access-requests/${id}/approve`, { method: 'POST' })
 
 export const blockUser = (username) =>
   request(`/users/${username}/block`, { method: 'POST' })
@@ -116,6 +121,12 @@ export const updatePost = (id, formData) =>
     return res.json()
   })
 
+export const forgotPassword = (email) =>
+  request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) })
+
+export const resetPassword = (token, new_password) =>
+  request('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, new_password }) })
+
 export const changePassword = (current_password, new_password) =>
   request('/users/me/password', {
     method: 'POST',
@@ -124,7 +135,7 @@ export const changePassword = (current_password, new_password) =>
 
 export const deletePost = (id) => request(`/posts/${id}`, { method: 'DELETE' })
 
-export const getNotifications = () => request('/notifications')
+export const getNotifications = (limit = 20, offset = 0) => request(`/notifications?limit=${limit}&offset=${offset}`)
 
 export const markNotificationsRead = () => request('/notifications/read', { method: 'POST' })
 
