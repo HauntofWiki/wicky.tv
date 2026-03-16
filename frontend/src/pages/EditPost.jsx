@@ -105,7 +105,7 @@ export default function EditPost() {
           </div>
 
           <div style={styles.field}>
-            <label style={styles.label}>tags</label>
+            <label style={styles.label}>relays</label>
             <input
               style={styles.input}
               value={tags}

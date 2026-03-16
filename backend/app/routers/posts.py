@@ -247,7 +247,7 @@ def list_tags(since: Optional[str] = None, db: Session = Depends(get_db)):
             FROM (
                 SELECT unnest(string_to_array(lower(tags), ',')) AS tag
                 FROM posts
-                WHERE tags IS NOT NULL AND parent_post_id IS NULL
+                WHERE tags IS NOT NULL
                 AND created_at >= NOW() - (:hours * INTERVAL '1 hour')
             ) t
             WHERE tag != ''
@@ -260,7 +260,7 @@ def list_tags(since: Optional[str] = None, db: Session = Depends(get_db)):
             FROM (
                 SELECT unnest(string_to_array(lower(tags), ',')) AS tag
                 FROM posts
-                WHERE tags IS NOT NULL AND parent_post_id IS NULL
+                WHERE tags IS NOT NULL
             ) t
             WHERE tag != ''
             GROUP BY tag
@@ -333,7 +333,9 @@ def list_posts(
     db: Session = Depends(get_db),
 ):
     from sqlalchemy import func
-    q = db.query(Post).join(User).filter(Post.parent_post_id == None)
+    q = db.query(Post).join(User)
+    if not tag:
+        q = q.filter(Post.parent_post_id == None)
     if username:
         q = q.filter(User.username == username)
     if tag:

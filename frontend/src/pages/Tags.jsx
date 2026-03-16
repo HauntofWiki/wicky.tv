@@ -34,18 +34,25 @@ export default function Tags() {
               <div
                 key={post.id}
                 style={styles.card}
-                onClick={() => navigate(`/post/${post.id}`)}
+                onClick={() => post.parent_post_id
+                  ? navigate(`/post/${post.parent_post_id}?highlight=${post.id}`)
+                  : navigate(`/post/${post.id}`)
+                }
               >
                 {post.media_type === 'video' ? (
                   <div style={styles.videoThumb}>
                     <span style={styles.playIcon}>▶</span>
                   </div>
-                ) : (
+                ) : post.media_path ? (
                   <img
                     src={`/uploads/${post.thumbnail_path || post.media_path}`}
                     alt={post.title}
                     style={styles.cardImg}
                   />
+                ) : (
+                  <div style={styles.noMedia}>
+                    <span style={styles.noMediaIcon}>✦</span>
+                  </div>
                 )}
                 <div style={styles.cardMeta}>
                   <span style={styles.cardTitle}>{post.title}</span>
@@ -96,6 +103,12 @@ const styles = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   playIcon: { color: 'var(--accent)', fontSize: '22px' },
+  noMedia: {
+    width: '72px', height: '72px', flexShrink: 0,
+    background: 'var(--surface)', borderRadius: '3px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
+  noMediaIcon: { color: 'var(--text-muted)', fontSize: '18px' },
   cardMeta: { display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minWidth: 0 },
   cardTitle: { fontSize: '15px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' },
   cardBy: { display: 'flex', gap: '10px', alignItems: 'center' },

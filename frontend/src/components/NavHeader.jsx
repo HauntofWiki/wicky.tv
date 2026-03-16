@@ -31,23 +31,26 @@ export default function NavHeader() {
         <span style={styles.logo} onClick={() => go(user ? '/home' : '/')}>wicky.tv</span>
         {user ? (
           <>
+            <div style={styles.rightGroup}>
+            <span style={styles.newBtn} onClick={() => go('/new')}>+</span>
             <div className="nav-full">
+              <span style={styles.navLink} onClick={() => go('/home')}>morioh</span>
+              <span style={styles.navLink} onClick={() => go('/notifications')}>
+                pings{unread > 0 && <span style={styles.badge}>{unread}</span>}
+              </span>
+              <span style={styles.navLink} onClick={() => go('/people')}>beings</span>
+              <span style={styles.navLink} onClick={() => go('/tags')}>relays</span>
+              <span style={styles.navLink} onClick={() => go(`/@${user.username}`)}>@{user.username}</span>
+              <span style={styles.navLink} onClick={() => go('/config')}>config</span>
+              <span style={styles.navLink} onClick={handleLogout}>disconnect</span>
               {user.is_admin && (
                 <span style={styles.navLink} onClick={() => go('/admin')}>admin</span>
               )}
-              <span style={styles.navLink} onClick={() => go('/new')}>new post</span>
-              <span style={styles.navLink} onClick={() => go('/people')}>people</span>
-              <span style={styles.navLink} onClick={() => go('/tags')}>tags</span>
-              <span style={styles.navLink} onClick={() => go('/settings')}>settings</span>
-              <span style={styles.navLink} onClick={() => go('/notifications')}>
-                notifications{unread > 0 && <span style={styles.badge}>{unread}</span>}
-              </span>
-              <span style={styles.navLink} onClick={() => go(`/@${user.username}`)}>@{user.username}</span>
-              <span style={styles.navLink} onClick={handleLogout}>log out</span>
             </div>
             <button className="hamburger-btn" onClick={() => setMenuOpen(o => !o)}>
               {menuOpen ? '✕' : '≡'}
             </button>
+            </div>
           </>
         ) : (
           <div style={styles.nav}>
@@ -58,18 +61,18 @@ export default function NavHeader() {
 
       {user && menuOpen && (
         <div className="mobile-nav-menu">
+          <span className="mobile-nav-menu-item" onClick={() => go('/home')}>morioh</span>
+          <span className="mobile-nav-menu-item" onClick={() => go('/notifications')}>
+            pings{unread > 0 && <span style={styles.badge}>{unread}</span>}
+          </span>
+          <span className="mobile-nav-menu-item" onClick={() => go('/people')}>beings</span>
+          <span className="mobile-nav-menu-item" onClick={() => go('/tags')}>relays</span>
+          <span className="mobile-nav-menu-item" onClick={() => go(`/@${user.username}`)}>@{user.username}</span>
+          <span className="mobile-nav-menu-item" onClick={() => go('/config')}>config</span>
+          <span className="mobile-nav-menu-item" onClick={handleLogout}>disconnect</span>
           {user.is_admin && (
             <span className="mobile-nav-menu-item" onClick={() => go('/admin')}>admin</span>
           )}
-          <span className="mobile-nav-menu-item" onClick={() => go('/new')}>new post</span>
-          <span className="mobile-nav-menu-item" onClick={() => go('/people')}>people</span>
-          <span className="mobile-nav-menu-item" onClick={() => go('/tags')}>tags</span>
-          <span className="mobile-nav-menu-item" onClick={() => go('/settings')}>settings</span>
-          <span className="mobile-nav-menu-item" onClick={() => go('/notifications')}>
-            notifications{unread > 0 && <span style={styles.badge}>{unread}</span>}
-          </span>
-          <span className="mobile-nav-menu-item" onClick={() => go(`/@${user.username}`)}>@{user.username}</span>
-          <span className="mobile-nav-menu-item" onClick={handleLogout}>log out</span>
         </div>
       )}
     </>
@@ -92,6 +95,18 @@ const styles = {
   navLink: {
     color: 'var(--text-muted)',
     cursor: 'pointer',
+  },
+  rightGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '20px',
+  },
+  newBtn: {
+    color: 'var(--accent)',
+    fontSize: '24px',
+    cursor: 'pointer',
+    lineHeight: 1,
+    padding: '0 4px',
   },
   badge: {
     display: 'inline-block',

@@ -135,7 +135,7 @@ export default function Settings() {
           </section>
 
           <section style={styles.section}>
-            <label style={styles.sectionLabel}>title</label>
+            <label style={styles.sectionLabel}>designation</label>
             <input
               type="text"
               value={title}
