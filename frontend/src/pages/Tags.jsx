@@ -27,7 +27,7 @@ export default function Tags() {
         {loading ? (
           <p style={styles.muted}>loading...</p>
         ) : posts.length === 0 ? (
-          <p style={styles.muted}>no posts tagged {tag}.</p>
+          <p style={styles.muted}>nothing on relay {tag}.</p>
         ) : (
           <div style={styles.feed}>
             {posts.map(post => (

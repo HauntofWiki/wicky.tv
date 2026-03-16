@@ -33,7 +33,7 @@ export default function TagsIndex() {
 
       <div className="page-body" style={styles.body}>
         <div style={styles.labelRow}>
-          <p style={styles.pageLabel}>tags</p>
+          <p style={styles.pageLabel}>relays</p>
           <div style={styles.toggle}>
             {WINDOWS.map(w => (
               <span
@@ -49,7 +49,7 @@ export default function TagsIndex() {
 
         <input
           style={styles.search}
-          placeholder="filter tags..."
+          placeholder="filter relays..."
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
