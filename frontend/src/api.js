@@ -135,6 +135,24 @@ export const changePassword = (current_password, new_password) =>
 
 export const deletePost = (id) => request(`/posts/${id}`, { method: 'DELETE' })
 
+export const getWeddingMessages = () => request('/wedding/messages')
+
+export const submitWeddingMessage = (formData) =>
+  fetch(`${BASE}/wedding/messages`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Submit failed' }))
+      throw new Error(err.detail || 'Submit failed')
+    }
+    return res.json()
+  })
+
+export const hideWeddingMessage = (id) =>
+  request(`/wedding/messages/${id}`, { method: 'DELETE' })
+
 export const getNotifications = (limit = 20, offset = 0) => request(`/notifications?limit=${limit}&offset=${offset}`)
 
 export const markNotificationsRead = () => request('/notifications/read', { method: 'POST' })

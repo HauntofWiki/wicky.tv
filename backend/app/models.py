@@ -125,3 +125,16 @@ class PasswordResetToken(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class WeddingMessage(Base):
+    __tablename__ = "wedding_messages"
+
+    id = Column(Integer, primary_key=True)
+    message = Column(Text, nullable=False)
+    from_name = Column(String(100), nullable=False)
+    to_name = Column(String(100))
+    media_key = Column(String(500))
+    media_type = Column(String(10))  # 'image' or 'video'
+    hidden = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

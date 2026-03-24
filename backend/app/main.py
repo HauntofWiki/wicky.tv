@@ -11,7 +11,7 @@ from sqlalchemy import text
 from app.auth import hash_password
 from app.database import Base, SessionLocal, engine
 from app.models import User
-from app.routers import access, admin, auth, blocks, follows, notifications, posts, users
+from app.routers import access, admin, auth, blocks, follows, notifications, posts, users, wedding
 
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="wicky.tv API")
@@ -34,6 +34,7 @@ app.include_router(posts.router)
 app.include_router(blocks.router)
 app.include_router(notifications.router)
 app.include_router(access.router)
+app.include_router(wedding.router)
 
 UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "/uploads")
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR, check_dir=False), name="uploads")
@@ -82,6 +83,18 @@ def _migrate():
         db.execute(text(
             "ALTER TABLE users ALTER COLUMN title TYPE VARCHAR(64)"
         ))
+        db.execute(text("""
+            CREATE TABLE IF NOT EXISTS wedding_messages (
+                id SERIAL PRIMARY KEY,
+                message TEXT NOT NULL,
+                from_name VARCHAR(100) NOT NULL,
+                to_name VARCHAR(100),
+                media_key VARCHAR(500),
+                media_type VARCHAR(10),
+                hidden BOOLEAN NOT NULL DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """))
         db.execute(text("""
             CREATE TABLE IF NOT EXISTS notifications (
                 id SERIAL PRIMARY KEY,

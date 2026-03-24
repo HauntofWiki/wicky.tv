@@ -17,6 +17,8 @@ import Tags from './pages/Tags'
 import TagsIndex from './pages/TagsIndex'
 import PublicFeed from './pages/PublicFeed'
 import Notifications from './pages/Notifications'
+import WeddingForm from './pages/WeddingForm'
+import WeddingDisplay from './pages/WeddingDisplay'
 
 const AuthContext = createContext(null)
 
@@ -72,6 +74,8 @@ export default function App() {
           <Route path="/tags" element={<TagsIndex />} />
           <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
           <Route path="/tags/:tag" element={<Tags />} />
+          <Route path="/wedding" element={<WeddingForm />} />
+          <Route path="/wedding/display" element={<WeddingDisplay />} />
           <Route path="/:username" element={<Profile />} />
           <Route path="/" element={<RootRoute />} />
         </Routes>
