@@ -12,7 +12,7 @@ from app.database import get_db
 from app.models import WeddingMessage
 from app import storage
 
-router = APIRouter(prefix="/wedding", tags=["wedding"])
+router = APIRouter(prefix="/api/wedding", tags=["wedding"])
 
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 ALLOWED_MIME_PREFIXES = ("image/", "video/")
