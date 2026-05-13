@@ -156,7 +156,7 @@ export default function WeddingDisplay() {
           <span style={styles.sendPrompt}>Send a message →</span>
           <span style={styles.urlText}>{DISPLAY_URL}</span>
           <img
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=64x64&color=f5e6d0&bgcolor=00000000&data=https://${DISPLAY_URL}`}
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&color=1e0d0d&bgcolor=f5e6d0&margin=8&data=https://${DISPLAY_URL}`}
             style={styles.qr}
             alt="QR"
           />
@@ -271,9 +271,8 @@ const styles = {
     letterSpacing: '0.5px',
   },
   qr: {
-    width: '48px',
-    height: '48px',
-    opacity: 0.7,
+    width: '64px',
+    height: '64px',
     borderRadius: '4px',
   },
 }
