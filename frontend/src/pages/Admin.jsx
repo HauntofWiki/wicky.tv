@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   approveAccessRequest, createInvite, deleteUser,
-  dismissAccessRequest, listAccessRequests, listAdminUsers, listInvites,
+  dismissAccessRequest, getWeddingMessages, hideWeddingMessage,
+  listAccessRequests, listAdminUsers, listInvites,
 } from '../api'
 import NavHeader from '../components/NavHeader'
 
-const TABS = ['invites', 'members', 'requests']
+const TABS = ['invites', 'members', 'requests', 'wedding']
 
 export default function Admin() {
   const navigate = useNavigate()
@@ -28,10 +29,16 @@ export default function Admin() {
   const [requests, setRequests] = useState([])
   const [requestsLoading, setRequestsLoading] = useState(true)
 
+  // wedding
+  const [weddingMessages, setWeddingMessages] = useState([])
+  const [weddingLoading, setWeddingLoading] = useState(true)
+  const [confirmHide, setConfirmHide] = useState(null)
+
   useEffect(() => {
     listInvites().then(setInvites).catch(e => setError(e.message)).finally(() => setInvitesLoading(false))
     listAdminUsers().then(setMembers).catch(() => {}).finally(() => setMembersLoading(false))
     listAccessRequests().then(setRequests).catch(() => {}).finally(() => setRequestsLoading(false))
+    getWeddingMessages().then(setWeddingMessages).catch(() => {}).finally(() => setWeddingLoading(false))
   }, [])
 
   async function handleGenerate() {
@@ -67,6 +74,14 @@ export default function Admin() {
   async function handleDismiss(id) {
     await dismissAccessRequest(id)
     setRequests(prev => prev.filter(r => r.id !== id))
+  }
+
+  async function handleHideMessage(id) {
+    try {
+      await hideWeddingMessage(id)
+      setWeddingMessages(prev => prev.filter(m => m.id !== id))
+    } catch (e) { setError(e.message) }
+    setConfirmHide(null)
   }
 
   return (
@@ -195,6 +210,53 @@ export default function Admin() {
                           <span style={styles.approve} onClick={() => handleApprove(r.id)}>approve</span>
                           {' · '}
                           <span style={styles.action} onClick={() => handleDismiss(r.id)}>dismiss</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+          </div>
+        )}
+
+        {tab === 'wedding' && (
+          <div style={styles.section}>
+            {weddingLoading ? <p style={styles.muted}>loading...</p>
+              : weddingMessages.length === 0 ? <p style={styles.muted}>no wedding messages.</p>
+              : (
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>from</th>
+                      <th style={styles.th}>to</th>
+                      <th style={styles.th}>message</th>
+                      <th style={styles.th}>media</th>
+                      <th style={styles.th}>date</th>
+                      <th style={styles.th}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {weddingMessages.map(m => (
+                      <tr key={m.id} style={styles.row}>
+                        <td style={styles.td}>{m.from_name}</td>
+                        <td style={styles.td}>{m.to_name || '—'}</td>
+                        <td style={{ ...styles.td, color: 'var(--text-muted)', fontSize: '13px' }}>{m.message}</td>
+                        <td style={styles.td}>
+                          {m.media_url
+                            ? <a href={m.media_url} target="_blank" rel="noreferrer" style={styles.code}>{m.media_type}</a>
+                            : '—'}
+                        </td>
+                        <td style={styles.td}>{new Date(m.created_at).toLocaleDateString()}</td>
+                        <td style={styles.td}>
+                          {confirmHide === m.id ? (
+                            <>
+                              <span style={styles.danger} onClick={() => handleHideMessage(m.id)}>confirm</span>
+                              {' · '}
+                              <span style={styles.action} onClick={() => setConfirmHide(null)}>cancel</span>
+                            </>
+                          ) : (
+                            <span style={styles.danger} onClick={() => setConfirmHide(m.id)}>hide</span>
+                          )}
                         </td>
                       </tr>
                     ))}
